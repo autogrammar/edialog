@@ -4,16 +4,14 @@
 ## AI Cost Tracking
 
 ![PyPI](https://img.shields.io/badge/pypi-costs-blue) ![Version](https://img.shields.io/badge/version-0.4.1-blue) ![Python](https://img.shields.io/badge/python-3.9+-blue) ![License](https://img.shields.io/badge/license-Apache--2.0-green)
-![AI Cost](https://img.shields.io/badge/AI%20Cost-$0.17-orange) ![Human Time](https://img.shields.io/badge/Human%20Time-1.5h-blue) ![Model](https://img.shields.io/badge/Model-openrouter%2Fqwen%2Fqwen3--coder--next-lightgrey)
+![AI Cost](https://img.shields.io/badge/AI%20Cost-$0.19-orange) ![Human Time](https://img.shields.io/badge/Human%20Time-1.6h-blue) ![Model](https://img.shields.io/badge/Model-openrouter%2Fqwen%2Fqwen3--coder--next-lightgrey)
 
-- 🤖 **LLM usage:** $0.1691 (1 commits)
-- 👤 **Human dev:** ~$150 (1.5h @ $100/h, 30min dedup)
+- 🤖 **LLM usage:** $0.1921 (2 commits)
+- 👤 **Human dev:** ~$156 (1.6h @ $100/h, 30min dedup)
 
 Generated on 2026-10-27 using [openrouter/qwen/qwen3-coder-next](https://openrouter.ai/qwen/qwen3-coder-next)
 
 ---
-
-
 
 Biblioteka Python do generowania i oceny dialogów literackich: historia rozmowy, strategia, cel tonu emocjonalnego, opcjonalny obraz i odtwarzalny DSL. Wersja 0.4.0 zastępuje nazwę AffectDialog.
 

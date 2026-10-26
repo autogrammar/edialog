@@ -8,6 +8,15 @@
 - Update README.md
 
 ### Other
+- Update examples/aloof_street_scenarios.py
+- Update examples/romance_street_scenarios.py
+
+## [0.4.1] - 2026-10-27
+
+### Docs
+- Update README.md
+
+### Other
 - Update .env.example
 - Update uv.lock
 
