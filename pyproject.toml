@@ -4,11 +4,12 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "edialog"
-version = "0.4.0"
+version = "0.4.1"
 description = "Auditable natural-language dialogue plans and illustrative affect simulation"
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = []
+license = "Apache-2.0"
 
 [project.optional-dependencies]
 images = ["Pillow>=10.4"]
@@ -22,3 +23,16 @@ where = ["src"]
 
 [tool.setuptools.package-data]
 edialog = ["data/*.json"]
+
+[tool.costs]
+# AI Cost tracking configuration
+badge = true
+update_readme = true
+readme_path = "README.md"
+default_model = "openrouter/qwen/qwen3-coder-next"
+analysis_mode = "byok"
+full_history = true
+max_commits = 500
+
+# Cost thresholds for badge colors (USD)
+badge_color_thresholds = { low = 1.0, medium = 5.0, high = 10.0, critical = 50.0 }

@@ -1,5 +1,17 @@
 # Changelog
 
+## [Unreleased]
+
+## [0.4.1] - 2026-10-27
+
+### Docs
+- Update README.md
+
+### Other
+- Update .env.example
+- Update uv.lock
+
+
 ## 0.4.0 — 2026-10-26
 
 - Projekt, importy i CLI używają nazwy edialog — [migracja](docs/REFACTORING/PROJECT_RENAME.md).
