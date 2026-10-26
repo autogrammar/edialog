@@ -1,0 +1,600 @@
+{
+  "version": "fiction-seed-pl-en-1",
+  "provenance": "Original hand-authored illustrative weights; not NRC or VADER data and not empirically calibrated.",
+  "entries": {
+    "strach": {
+      "scared": 0.75
+    },
+    "strachu": {
+      "scared": 0.75
+    },
+    "lęk": {
+      "scared": 0.75
+    },
+    "lęku": {
+      "scared": 0.75
+    },
+    "fear": {
+      "scared": 0.75
+    },
+    "afraid": {
+      "scared": 0.75
+    },
+    "scared": {
+      "scared": 0.75
+    },
+    "boję się": {
+      "scared": 0.9
+    },
+    "boisz się": {
+      "scared": 0.9
+    },
+    "przerażony": {
+      "scared": 0.9
+    },
+    "przerażona": {
+      "scared": 0.9
+    },
+    "terrified": {
+      "scared": 0.9
+    },
+    "groźba": {
+      "scared": 0.7
+    },
+    "grozi": {
+      "scared": 0.7
+    },
+    "zagrożenie": {
+      "scared": 0.7
+    },
+    "niebezpieczeństwo": {
+      "scared": 0.7
+    },
+    "danger": {
+      "scared": 0.7
+    },
+    "threat": {
+      "scared": 0.7
+    },
+    "ktoś nas śledzi": {
+      "scared": 0.8
+    },
+    "ktoś jest za drzwiami": {
+      "scared": 0.8
+    },
+    "nie jesteśmy sami": {
+      "scared": 0.8
+    },
+    "nie otwieraj": {
+      "scared": 0.8
+    },
+    "someone is following us": {
+      "scared": 0.8
+    },
+    "uciekaj": {
+      "scared": 0.85,
+      "excited": 0.15
+    },
+    "uciekajmy": {
+      "scared": 0.85,
+      "excited": 0.15
+    },
+    "potwór": {
+      "scared": 0.85,
+      "excited": 0.15
+    },
+    "run away": {
+      "scared": 0.85,
+      "excited": 0.15
+    },
+    "monster": {
+      "scared": 0.85,
+      "excited": 0.15
+    },
+    "smutek": {
+      "sad": 0.7
+    },
+    "smutny": {
+      "sad": 0.7
+    },
+    "smutna": {
+      "sad": 0.7
+    },
+    "smutno": {
+      "sad": 0.7
+    },
+    "sad": {
+      "sad": 0.7
+    },
+    "sadness": {
+      "sad": 0.7
+    },
+    "tęsknię": {
+      "sad": 0.65
+    },
+    "tęsknota": {
+      "sad": 0.65
+    },
+    "samotny": {
+      "sad": 0.65
+    },
+    "samotna": {
+      "sad": 0.65
+    },
+    "samotność": {
+      "sad": 0.65
+    },
+    "lonely": {
+      "sad": 0.65
+    },
+    "miss you": {
+      "sad": 0.65
+    },
+    "strata": {
+      "sad": 0.8
+    },
+    "żałoba": {
+      "sad": 0.8
+    },
+    "żal": {
+      "sad": 0.8
+    },
+    "loss": {
+      "sad": 0.8
+    },
+    "grief": {
+      "sad": 0.8
+    },
+    "łzy": {
+      "sad": 0.7
+    },
+    "płacz": {
+      "sad": 0.7
+    },
+    "płacze": {
+      "sad": 0.7
+    },
+    "tears": {
+      "sad": 0.7
+    },
+    "crying": {
+      "sad": 0.7
+    },
+    "nie wróci": {
+      "sad": 0.85
+    },
+    "nigdy nie wróci": {
+      "sad": 0.85
+    },
+    "pożegnanie": {
+      "sad": 0.85
+    },
+    "zostało puste miejsce": {
+      "sad": 0.85
+    },
+    "ostatni raz": {
+      "sad": 0.85
+    },
+    "goodbye": {
+      "sad": 0.85
+    },
+    "never coming back": {
+      "sad": 0.85
+    },
+    "gniew": {
+      "angry": 0.85
+    },
+    "wściekły": {
+      "angry": 0.85
+    },
+    "wściekła": {
+      "angry": 0.85
+    },
+    "wściekłość": {
+      "angry": 0.85
+    },
+    "angry": {
+      "angry": 0.85
+    },
+    "anger": {
+      "angry": 0.85
+    },
+    "furious": {
+      "angry": 0.85
+    },
+    "zdrada": {
+      "angry": 0.75,
+      "sad": 0.2
+    },
+    "zdradziłeś": {
+      "angry": 0.75,
+      "sad": 0.2
+    },
+    "zdradziłaś": {
+      "angry": 0.75,
+      "sad": 0.2
+    },
+    "kłamstwo": {
+      "angry": 0.75,
+      "sad": 0.2
+    },
+    "kłamiesz": {
+      "angry": 0.75,
+      "sad": 0.2
+    },
+    "betrayal": {
+      "angry": 0.75,
+      "sad": 0.2
+    },
+    "you lied": {
+      "angry": 0.75,
+      "sad": 0.2
+    },
+    "nienawidzę": {
+      "angry": 0.75
+    },
+    "dość": {
+      "angry": 0.75
+    },
+    "hate": {
+      "angry": 0.75
+    },
+    "enough": {
+      "angry": 0.75
+    },
+    "jak mogłeś": {
+      "angry": 0.8
+    },
+    "jak mogłaś": {
+      "angry": 0.8
+    },
+    "nie masz prawa": {
+      "angry": 0.8
+    },
+    "how could you": {
+      "angry": 0.8
+    },
+    "radość": {
+      "happy": 0.8
+    },
+    "radosny": {
+      "happy": 0.8
+    },
+    "radosna": {
+      "happy": 0.8
+    },
+    "szczęście": {
+      "happy": 0.8
+    },
+    "szczęśliwy": {
+      "happy": 0.8
+    },
+    "szczęśliwa": {
+      "happy": 0.8
+    },
+    "happy": {
+      "happy": 0.8
+    },
+    "joy": {
+      "happy": 0.8
+    },
+    "kocham": {
+      "happy": 0.65
+    },
+    "miłość": {
+      "happy": 0.65
+    },
+    "uśmiech": {
+      "happy": 0.65
+    },
+    "uśmiecha": {
+      "happy": 0.65
+    },
+    "love": {
+      "happy": 0.65
+    },
+    "smile": {
+      "happy": 0.65
+    },
+    "wróciłeś": {
+      "happy": 0.75
+    },
+    "wróciłaś": {
+      "happy": 0.75
+    },
+    "jesteś w domu": {
+      "happy": 0.75
+    },
+    "cieszę się": {
+      "happy": 0.75
+    },
+    "you are home": {
+      "happy": 0.75
+    },
+    "udało się": {
+      "happy": 0.75,
+      "excited": 0.5
+    },
+    "wygraliśmy": {
+      "happy": 0.75,
+      "excited": 0.5
+    },
+    "we won": {
+      "happy": 0.75,
+      "excited": 0.5
+    },
+    "ekscytacja": {
+      "excited": 0.8
+    },
+    "ekscytujący": {
+      "excited": 0.8
+    },
+    "ekscytująca": {
+      "excited": 0.8
+    },
+    "podekscytowany": {
+      "excited": 0.8
+    },
+    "podekscytowana": {
+      "excited": 0.8
+    },
+    "excited": {
+      "excited": 0.8
+    },
+    "excitement": {
+      "excited": 0.8
+    },
+    "przygoda": {
+      "excited": 0.65
+    },
+    "wyruszamy": {
+      "excited": 0.65
+    },
+    "zaczynamy": {
+      "excited": 0.65
+    },
+    "ruszajmy": {
+      "excited": 0.65
+    },
+    "adventure": {
+      "excited": 0.65
+    },
+    "let us begin": {
+      "excited": 0.65
+    },
+    "nie mogę się doczekać": {
+      "excited": 0.8
+    },
+    "can hardly wait": {
+      "excited": 0.8
+    },
+    "cannot wait": {
+      "excited": 0.8
+    },
+    "aż podskakuję z radości": {
+      "h-cited": 0.85,
+      "happy": 0.4,
+      "excited": 0.4
+    },
+    "radość mnie rozpiera": {
+      "h-cited": 0.85,
+      "happy": 0.4,
+      "excited": 0.4
+    },
+    "thrilled": {
+      "h-cited": 0.85,
+      "happy": 0.4,
+      "excited": 0.4
+    },
+    "overjoyed": {
+      "h-cited": 0.85,
+      "happy": 0.4,
+      "excited": 0.4
+    },
+    "radość i ekscytacja": {
+      "h-cited": 0.9
+    },
+    "h-cited": {
+      "h-cited": 0.9
+    },
+    "spokojnie": {
+      "nothing": 0.65
+    },
+    "zwyczajnie": {
+      "nothing": 0.65
+    },
+    "rutyna": {
+      "nothing": 0.65
+    },
+    "bez zmian": {
+      "nothing": 0.65
+    },
+    "bez emocji": {
+      "nothing": 0.65
+    },
+    "obojętny": {
+      "nothing": 0.65
+    },
+    "obojętna": {
+      "nothing": 0.65
+    },
+    "neutral": {
+      "nothing": 0.65
+    },
+    "ordinary": {
+      "nothing": 0.65
+    },
+    "nothing special": {
+      "nothing": 0.65
+    },
+    "to tylko wiatr": {
+      "nothing": 0.4,
+      "happy": 0.25
+    },
+    "już po wszystkim": {
+      "nothing": 0.4,
+      "happy": 0.25
+    },
+    "jesteśmy bezpieczni": {
+      "nothing": 0.4,
+      "happy": 0.25
+    },
+    "it was only the wind": {
+      "nothing": 0.4,
+      "happy": 0.25
+    }
+  },
+  "context_rules": [
+    {
+      "phrase": "kroki",
+      "requires": "scared",
+      "threshold": 0.15,
+      "weights": {
+        "scared": 0.9
+      }
+    },
+    {
+      "phrase": "footsteps",
+      "requires": "scared",
+      "threshold": 0.15,
+      "weights": {
+        "scared": 0.9
+      }
+    },
+    {
+      "phrase": "cisza",
+      "requires": "scared",
+      "threshold": 0.15,
+      "weights": {
+        "scared": 0.9
+      }
+    },
+    {
+      "phrase": "silence",
+      "requires": "scared",
+      "threshold": 0.15,
+      "weights": {
+        "scared": 0.9
+      }
+    },
+    {
+      "phrase": "drzwi",
+      "requires": "scared",
+      "threshold": 0.15,
+      "weights": {
+        "scared": 0.9
+      }
+    },
+    {
+      "phrase": "door",
+      "requires": "scared",
+      "threshold": 0.15,
+      "weights": {
+        "scared": 0.9
+      }
+    },
+    {
+      "phrase": "szept",
+      "requires": "scared",
+      "threshold": 0.15,
+      "weights": {
+        "scared": 0.9
+      }
+    },
+    {
+      "phrase": "whisper",
+      "requires": "scared",
+      "threshold": 0.15,
+      "weights": {
+        "scared": 0.9
+      }
+    },
+    {
+      "phrase": "kroki",
+      "requires": "happy",
+      "threshold": 0.15,
+      "weights": {
+        "happy": 0.7,
+        "h-cited": 0.25
+      }
+    },
+    {
+      "phrase": "footsteps",
+      "requires": "happy",
+      "threshold": 0.15,
+      "weights": {
+        "happy": 0.7,
+        "h-cited": 0.25
+      }
+    },
+    {
+      "phrase": "drzwi",
+      "requires": "happy",
+      "threshold": 0.15,
+      "weights": {
+        "happy": 0.7,
+        "h-cited": 0.25
+      }
+    },
+    {
+      "phrase": "door",
+      "requires": "happy",
+      "threshold": 0.15,
+      "weights": {
+        "happy": 0.7,
+        "h-cited": 0.25
+      }
+    },
+    {
+      "phrase": "cisza",
+      "requires": "sad",
+      "threshold": 0.15,
+      "weights": {
+        "sad": 0.85
+      }
+    },
+    {
+      "phrase": "silence",
+      "requires": "sad",
+      "threshold": 0.15,
+      "weights": {
+        "sad": 0.85
+      }
+    },
+    {
+      "phrase": "puste krzesło",
+      "requires": "sad",
+      "threshold": 0.15,
+      "weights": {
+        "sad": 0.85
+      }
+    },
+    {
+      "phrase": "nareszcie",
+      "requires": "scared",
+      "threshold": 0.15,
+      "weights": {
+        "happy": 0.6,
+        "nothing": 0.3
+      }
+    },
+    {
+      "phrase": "to tylko wiatr",
+      "requires": "scared",
+      "threshold": 0.15,
+      "weights": {
+        "happy": 0.6,
+        "nothing": 0.3
+      }
+    },
+    {
+      "phrase": "już po wszystkim",
+      "requires": "scared",
+      "threshold": 0.15,
+      "weights": {
+        "happy": 0.6,
+        "nothing": 0.3
+      }
+    }
+  ]
+}

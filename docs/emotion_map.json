@@ -1,0 +1,18 @@
+{
+  "codes": {
+    "scared": 0,
+    "sad": 2,
+    "angry": 4,
+    "nothing": 5,
+    "happy": 6,
+    "h-cited": 7,
+    "excited": 8
+  },
+  "code_semantics": "categorical_identifiers",
+  "intensity_range": [
+    0,
+    1
+  ],
+  "probabilities": false,
+  "unknown_is_not_nothing": true
+}

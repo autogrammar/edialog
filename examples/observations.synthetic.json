@@ -1,0 +1,8 @@
+{
+  "kind": "synthetic_fixture",
+  "source": "Ręcznie utworzone dane demonstracyjne. Nie pochodzą od ludzi.",
+  "records": [
+    {"checkpoint": "after_puzzle", "concept": "curiosity", "value": 0.48},
+    {"checkpoint": "after_explanation", "concept": "relief", "value": 0.55}
+  ]
+}

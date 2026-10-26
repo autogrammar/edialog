@@ -1,0 +1,83 @@
+{
+  "participants": [
+    {
+      "id": "anna",
+      "name": "Anna",
+      "aliases": [
+        "Anny",
+        "Annę"
+      ],
+      "address": "Anno"
+    },
+    {
+      "id": "jan",
+      "name": "Jan",
+      "aliases": [
+        "Jana"
+      ],
+      "address": "Janie"
+    },
+    {
+      "id": "piotr",
+      "name": "Piotr",
+      "aliases": [
+        "Piotra"
+      ],
+      "address": "Piotrze"
+    }
+  ],
+  "turns": [
+    {
+      "id": "t1",
+      "speaker": "anna",
+      "text": "Nie wiem, co mam przygotować na spotkanie.",
+      "recipients": [
+        "jan",
+        "piotr"
+      ],
+      "reply_to": null,
+      "kind": "observed"
+    },
+    {
+      "id": "t2",
+      "speaker": "piotr",
+      "text": "Potrzebuję doprecyzowania zakresu.",
+      "recipients": [
+        "jan",
+        "anna"
+      ],
+      "reply_to": null,
+      "kind": "observed"
+    }
+  ],
+  "readings": {
+    "anna": {
+      "tension": {
+        "value": 0.7,
+        "origin": "synthetic_fixture",
+        "at_turn_count": 2,
+        "source_turn": null
+      },
+      "relief": {
+        "value": 0.05,
+        "origin": "synthetic_fixture",
+        "at_turn_count": 2,
+        "source_turn": null
+      },
+      "confusion": {
+        "value": 0.6,
+        "origin": "synthetic_fixture",
+        "at_turn_count": 2,
+        "source_turn": null
+      }
+    },
+    "piotr": {
+      "confusion": {
+        "value": 0.5,
+        "origin": "synthetic_fixture",
+        "at_turn_count": 2,
+        "source_turn": null
+      }
+    }
+  }
+}

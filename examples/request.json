@@ -1,0 +1,21 @@
+{
+  "goals": [
+    {
+      "participant": "anna",
+      "emotion": "tension",
+      "direction": "decrease",
+      "threshold": 0.4
+    },
+    {
+      "participant": "piotr",
+      "emotion": "confusion",
+      "direction": "decrease",
+      "threshold": null
+    }
+  ],
+  "strategies": [
+    "empathy",
+    "clarify"
+  ],
+  "interpretation": "controlled_nl_pl_en"
+}

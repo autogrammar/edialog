@@ -1,0 +1,20 @@
+[
+  {
+    "prediction": {
+      "scared": 0.7,
+      "sad": 0.3
+    },
+    "rating": {
+      "scared": 0.4,
+      "sad": 0.2
+    }
+  },
+  {
+    "prediction": {
+      "happy": 0.6
+    },
+    "rating": {
+      "happy": 0.7
+    }
+  }
+]

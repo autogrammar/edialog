@@ -1,0 +1,24 @@
+[build-system]
+requires = ["setuptools>=61", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "edialog"
+version = "0.4.0"
+description = "Auditable natural-language dialogue plans and illustrative affect simulation"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = []
+
+[project.optional-dependencies]
+images = ["Pillow>=10.4"]
+
+[project.scripts]
+edialog = "edialog.cli:main"
+edialog-fiction = "edialog.fiction_cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+edialog = ["data/*.json"]

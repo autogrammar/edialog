@@ -1,0 +1,87 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "goals",
+    "strategies"
+  ],
+  "properties": {
+    "goals": {
+      "type": "array",
+      "maxItems": 30,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "participant",
+          "emotion",
+          "direction"
+        ],
+        "properties": {
+          "participant": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]{0,47}$"
+          },
+          "emotion": {
+            "type": "string",
+            "enum": [
+              "tension",
+              "frustration",
+              "confusion",
+              "curiosity",
+              "relief",
+              "calm"
+            ]
+          },
+          "direction": {
+            "type": "string",
+            "enum": [
+              "increase",
+              "decrease"
+            ]
+          },
+          "threshold": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": 0,
+            "maximum": 1
+          }
+        }
+      }
+    },
+    "strategies": {
+      "type": "array",
+      "maxItems": 3,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "enum": [
+          "empathy",
+          "clarify",
+          "explain",
+          "invite",
+          "summarize",
+          "deescalate"
+        ]
+      }
+    }
+  },
+  "anyOf": [
+    {
+      "properties": {
+        "goals": {
+          "minItems": 1
+        }
+      }
+    },
+    {
+      "properties": {
+        "strategies": {
+          "minItems": 1
+        }
+      }
+    }
+  ]
+}

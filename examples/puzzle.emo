@@ -1,0 +1,37 @@
+affect 0.1
+model illustrative
+seed 42
+noise 0
+
+# Axis values are a modeller's appraisal assumptions, not text-derived facts.
+axis novelty
+axis clarity
+concept curiosity "Ciekawość: zainteresowanie poznaniem brakującej informacji. Definicja robocza."
+concept relief "Ulga: zmniejszenie wcześniej odczuwanego napięcia. Definicja robocza."
+concept tension "Napięcie: szerszy stan afektywny modelu, nie odrębna podstawowa emocja."
+state curiosity 0.10 retention 0.80
+state relief 0.05 retention 0.75
+state tension 0.60 retention 0.90
+driver curiosity novelty 0.60
+driver curiosity clarity -0.20
+driver relief clarity 0.60
+driver tension clarity -0.50
+couple curiosity relief 0.10
+requires relief drop tension 0.05
+event puzzle novelty=0.70 clarity=0.00
+event explanation novelty=0.10 clarity=0.80
+
+explain curiosity
+checkpoint initial
+apply puzzle ticks 1
+checkpoint after_puzzle
+gate after_puzzle curiosity >= 0.20
+explain relief
+apply explanation ticks 1
+checkpoint after_explanation
+wait ticks 2
+checkpoint later
+expect after_puzzle curiosity > 0.10
+expect after_explanation relief >= 0.40
+expect after_explanation tension < 0.20
+expect later relief < 0.60

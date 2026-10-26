@@ -1,0 +1,32 @@
+{
+  "schema": "edialog.docs/profile/v1",
+  "adoption": "local-format-adaptation",
+  "owner": "edialog",
+  "scope": "project",
+  "based_on": {
+    "repository": "wellmanifest/docs",
+    "revision": "f4cb34926d7369d74b0a1fe09e896a35b72c016c",
+    "policy_sha256": "fac05e720ec49370ba393e817a4a03b895d7ed33828e09b3420f9fcfb09264b0",
+    "url": "https://github.com/wellmanifest/docs/tree/f4cb34926d7369d74b0a1fe09e896a35b72c016c"
+  },
+  "document_schema": "edialog.docs/document/v1",
+  "redirect_schema": "edialog.docs/redirect/v1",
+  "directories": {
+    "information": "INFORMATION",
+    "feature": "FEATURE",
+    "analysis": "ANALYSIS",
+    "decision": "DECISION",
+    "refactoring-plan": "REFACTORING"
+  },
+  "limits": {
+    "max_lines": 120,
+    "max_words": 600,
+    "max_bytes": 12288
+  },
+  "source_digest": "8ab58943e2919955b804983a73c79b315795ee03d4e886df632464bbac4481b7",
+  "upstream_adoption": {
+    "status": "not_configured",
+    "repository": null,
+    "reason": "Local source package; no confirmed org/repo, published adoption pin or CI deployment was supplied."
+  }
+}

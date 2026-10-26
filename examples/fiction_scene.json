@@ -1,0 +1,47 @@
+{
+  "participants": [
+    {
+      "id": "anna",
+      "name": "Anna",
+      "aliases": [],
+      "address": null
+    },
+    {
+      "id": "jan",
+      "name": "Jan",
+      "aliases": [],
+      "address": null
+    },
+    {
+      "id": "piotr",
+      "name": "Piotr",
+      "aliases": [],
+      "address": null
+    }
+  ],
+  "turns": [
+    {
+      "id": "t1",
+      "speaker": "anna",
+      "text": "Ktoś jest za drzwiami. Boję się.",
+      "recipients": [
+        "jan",
+        "piotr"
+      ],
+      "reply_to": null,
+      "kind": "observed"
+    },
+    {
+      "id": "t2",
+      "speaker": "piotr",
+      "text": "Słyszę kroki.",
+      "recipients": [
+        "jan",
+        "anna"
+      ],
+      "reply_to": null,
+      "kind": "observed"
+    }
+  ],
+  "readings": {}
+}

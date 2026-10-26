@@ -1,0 +1,14 @@
+affect 0.1
+model illustrative
+axis novelty
+concept curiosity "Ciekawość jako stan modelu, a nie diagnoza."
+state curiosity 0.10 retention 0.80
+driver curiosity novelty 0.10
+event mild novelty=0.10
+explain curiosity
+apply mild ticks 1
+checkpoint first
+gate first curiosity >= 0.90
+apply mild ticks 10
+checkpoint unreachable
+expect unreachable curiosity >= 0.90
