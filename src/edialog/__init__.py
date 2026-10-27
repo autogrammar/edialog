@@ -13,8 +13,10 @@ from .pipeline import (
     TRUST_PRESETS,
     ProcessPipelineResult,
     ProcessStepTrace,
+    analyze_and_respond_turn,
     build_workflow_dag,
     dispatch_probe,
+    render_analytical_ascii_diagram,
     render_uri_call_snippet,
     run_process_pipeline,
     uri,
@@ -31,5 +33,6 @@ __all__ = ['DialogueEngine', 'Proposal', 'Dialogue', 'Participant', 'Goal', 'Req
            'FictionProposal', 'FictionEngine', 'CallableFictionBackend',
            'parse_fiction_request', 'evaluate_annotations', 'OllamaJSON', 'SubLLMJSON',
            'PROCESS_CATALOG', 'TRUST_PRESETS', 'ProcessStepTrace', 'ProcessPipelineResult',
-           'build_workflow_dag', 'dispatch_probe', 'run_process_pipeline', 'uri', 'uri_jsonl',
+           'analyze_and_respond_turn', 'build_workflow_dag', 'dispatch_probe',
+           'render_analytical_ascii_diagram', 'run_process_pipeline', 'uri', 'uri_jsonl',
            'render_uri_call_snippet', 'EDialogMCPServer', 'get_registry_manifest']

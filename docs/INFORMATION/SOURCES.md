@@ -9,7 +9,7 @@
   "owner": "edialog",
   "scope": "project",
   "updated": "2026-10-26",
-  "source_digest": "b0efc20fcab2658f4547bde8a613575c63cc4a5ddf7866de2de3c48ffde45b49",
+  "source_digest": "86c18b79f14d7d74dbdcab58dbe17b7722d42d8ab594a2cd4bd49c7efe7128eb",
   "priority": "P2",
   "evidence": [
     "docs/profile.json",

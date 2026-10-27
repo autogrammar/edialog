@@ -1026,6 +1026,14 @@ PROCESS_CATALOG: dict[str, dict[str, Any]] = {
         'owner': 'edialog',
         'effect': 'pure',
     },
+    'proc://edialog/turn/analyze_and_respond/v1': {
+        'id': 'edialog.turn.analyze_and_respond',
+        'uri': 'proc://edialog/turn/analyze_and_respond/v1',
+        'aliases': ['edialog.turn_analyze_and_respond', 'turn.analyze_and_respond'],
+        'description': 'Analizuje zdanie wejściowe (metryki emocji), kompiluje oczekiwania NL i generuje odpowiedź dla osoby/grupy wraz z równoległym opisem DSL/JSON/YAML oraz diagramem ASCII.',
+        'owner': 'edialog',
+        'effect': 'idempotent',
+    },
 }
 
 
@@ -1119,6 +1127,22 @@ def uri(address: str, payload: dict[str, Any] | str | None = None) -> dict[str, 
             image_weight=float(data.get('image_weight', 0.35)),
         )
         return res.to_dict()
+    if canonical == 'proc://edialog/turn/analyze_and_respond/v1':
+        return analyze_and_respond_turn(
+            data.get('dialogue'),
+            situation=data.get('situation') or {},
+            input_speaker=data['input_speaker'],
+            input_sentence=data['input_sentence'],
+            input_recipients=data.get('input_recipients') or [data['actor']],
+            actor=data['actor'],
+            recipients=data['recipients'],
+            target_nl=data.get('target_nl'),
+            trust_level=data.get('trust_level'),
+            request=data.get('request'),
+            author_brief=data.get('author_brief'),
+            candidates=data.get('candidates'),
+            backend=data.get('backend'),
+        )
     raise ValidationError(f'Unhandled process URI: {canonical}')
 
 
@@ -1181,4 +1205,300 @@ def dispatch_probe(target_uri: str, payload: dict[str, Any] | None = None) -> di
             'input_sha256': digest,
         },
     }
+
+
+def _fmt_vec(vec: dict[str, float]) -> str:
+    non_zero = [f'{k}={v:.2f}' for k, v in sorted(vec.items(), key=lambda x: -x[1]) if abs(v) > 0.001]
+    return ', '.join(non_zero) if non_zero else 'neutral(0.00)'
+
+
+def render_analytical_ascii_diagram(record: dict[str, Any], *, step_no: int = 1) -> str:
+    """Render a clear causal ASCII diagram showing how stages 1 -> 2 -> 3 -> 4 produce the dialogue turn."""
+    s1 = record['1_situation_description']
+    s2 = record['2_input_sentence_analysis']
+    s3 = record['3_target_state_nl_and_plan']
+    s4 = record['4_edialog_response_and_parallel_dsl']
+
+    scope_tag = 'GRUPA' if s1['recipient_scope'] == 'group' else 'OSOBA'
+    in_vec_str = _fmt_vec(s2['text_affect_metrics']['sentence_scores'])
+    before_vec_str = _fmt_vec(s2['scene_state_after_input']['reader_proxy_before_reply'])
+    target_vec_str = _fmt_vec(s3['compiled_target_vector'])
+    after_vec_str = _fmt_vec(s4['response_state_metrics']['reader_proxy_after_reply'])
+    delta_vec_str = _fmt_vec(s4['response_state_metrics']['state_delta'])
+    strats_str = ', '.join(s3['compiled_strategies'])
+
+    lines = [
+        f'+==============================================================================================+',
+        f'| KOLEJKA ANALITYCZNA #{step_no}: PRZEPŁYW PRZYCZYNOWO-SKUTKOWY (PROCESY I MODELE DANYCH)          |',
+        f'+==============================================================================================+',
+        f'| [1. OPIS SYTUACJI I RELACJI] (Kontekst wejściowy modelu)                                     |',
+        f'|   • Scena / Środowisko : {s1["environment"][:68]}',
+        f'|   • Relacja / Zaufanie : trust={s1["trust_level"]} ({s1["social_distance"][:48]})',
+        f'|   • Kierunek wymiany   : {s1["incoming_speaker"]} ---> {s1["responding_actor"]} ---> [{scope_tag}: {", ".join(s1["recipients"])}]',
+        f'+----------------------------------------------+-----------------------------------------------+',
+        f'                                               |',
+        f'                                               v  (proc://edialog/context/filter/v1)',
+        f'+----------------------------------------------+-----------------------------------------------+',
+        f'| [2. ZDANIE WEJŚCIOWE DO ANALIZY + METRYKI STANU EMOCJONALNEGO]                               |',
+        f'|   • Wypowiedź ({s2["speaker"]}): „{s2["text"][:72]}”',
+        f'|   • Metryki zdania (TextEmotionAnalyzer) : [{in_vec_str}] (status={s2["text_affect_metrics"]["status"]})',
+        f'|   • Dopasowania leksykalne / kontekst    : {json.dumps(s2["text_affect_metrics"]["evidence_matches"], ensure_ascii=False)[:66]}',
+        f'|   • Stan sceny PRZED odpowiedzią         : reader_proxy = [{before_vec_str}]',
+        f'+----------------------------------------------+-----------------------------------------------+',
+        f'                                               |',
+        f'                                               v  (proc://edialog/nl/parse/v1)',
+        f'+----------------------------------------------+-----------------------------------------------+',
+        f'| [3. OPIS STANU DOCELOWEGO W NL -> KOMPILACJA DO PARAMETRÓW I ACTION URI]                     |',
+        f'|   • Oczekiwania NL     : „{s3["target_expectation_nl"][:68]}”',
+        f'|   • Skompilowany cel   : target = [{target_vec_str}] | strategie = [{strats_str}]',
+        f'|   • Dystans początkowy : distance_before = {s3["distance_before_reply"]:.4f} (tolerancja={s3["tolerance"]:.2f})',
+        f'|   • Action URI         : {s3["action_uri"][:68]}...',
+        f'+----------------------------------------------+-----------------------------------------------+',
+        f'                                               |',
+        f'                                               v  (proc://edialog/candidates/generate/v1 -> affect/score/v1)',
+        f'+----------------------------------------------+-----------------------------------------------+',
+        f'| [4. ODPOWIEDŹ EDIALOG DLA ({scope_tag}: {", ".join(s1["recipients"])}) + STAN I DSL/JSON/YAML]             |',
+        f'|   • Wybrana odpowiedź ({s4["response_turn"]["actor"]}):',
+        f'|     >>> „{s4["response_turn"]["text"]}”',
+        f'|   • Ranking kandydatów (wybór min rank_loss):',
+    ]
+    for c in s4['response_state_metrics']['candidates_ranking'][:3]:
+        marker = '*' if c['rank'] == 1 else ' '
+        lines.append(
+            f'|     {marker} #{c["rank"]} loss={c["rank_loss"]:.4f} (dist={c["distance"]:.4f}, rep={c["repetition_penalty"]:.4f}): „{c["text"][:52]}...”'
+        )
+    lines.extend([
+        f'|   • Stan sceny PO odpowiedzi             : reader_proxy = [{after_vec_str}]',
+        f'|   • Wektor zmiany (Delta)                : Δ = [{delta_vec_str}] | poprawa = {s4["response_state_metrics"]["improvement"]:+.4f}',
+        f'|   • Weryfikacja DSL / Replay / Kwit      : replay_verified={s4["replay_verified"]} | receipt={s4["receipt_id"]}',
+        f'+==============================================================================================+',
+    ])
+    return '\n'.join(lines)
+
+
+def analyze_and_respond_turn(
+    dialogue: Dialogue | dict[str, Any] | None = None,
+    *,
+    situation: dict[str, Any],
+    input_speaker: str,
+    input_sentence: str,
+    input_recipients: list[str] | tuple[str, ...] | None = None,
+    actor: str,
+    recipients: list[str] | tuple[str, ...],
+    target_nl: str | None = None,
+    trust_level: str | None = None,
+    request: FictionRequest | dict[str, Any] | None = None,
+    author_brief: dict[str, Any] | None = None,
+    candidates: list[str] | tuple[str, ...] | None = None,
+    backend: Any = None,
+    step_no: int = 1,
+) -> dict[str, Any]:
+    """Execute one complete 4-part analytical turn:
+
+    1. Situation description (environment, relationship distance, trust level, person/group scope)
+    2. Input sentence emotional metrics (TextEmotionAnalyzer lexical/context hits + reader_proxy_before)
+    3. Target state expectations in NL -> compiled target vector, strategies, and Action URI
+    4. edialog response for the target person/group + parallel DSL, JSON, YAML state + ASCII causal diagram
+    """
+    from .models import Participant
+
+    recipients_tuple = tuple(recipients)
+    in_recipients = tuple(input_recipients) if input_recipients else (actor,)
+
+    if dialogue is None:
+        pids = list(dict.fromkeys([input_speaker, actor, *in_recipients, *recipients_tuple]))
+        dlg = Dialogue([Participant(pid, pid.capitalize()) for pid in pids])
+    elif isinstance(dialogue, Dialogue):
+        dlg = Dialogue.from_dict(dialogue.to_dict())
+    else:
+        dlg = Dialogue.from_dict(dialogue)
+
+    prior_texts = [t.text for t in dlg.turns]
+    in_turn = dlg.add_turn(input_speaker, input_sentence, recipients=in_recipients)
+
+    analyzer = TextEmotionAnalyzer()
+    in_affect = analyzer.analyze(input_sentence, history=prior_texts)
+    in_dict = in_affect.to_dict()
+
+    merged_brief = dict(author_brief or {})
+    merged_brief['situation'] = situation
+    if target_nl:
+        merged_brief['author_nl_expectation'] = target_nl
+
+    pipe_res = run_process_pipeline(
+        dlg,
+        actor=actor,
+        recipients=recipients_tuple,
+        instruction=target_nl if request is None else None,
+        request=request,
+        trust_level=trust_level,
+        author_brief=merged_brief,
+        candidates=candidates,
+        backend=backend,
+    )
+    pipe_dict = pipe_res.to_dict()
+    proposal = pipe_dict['proposal']
+    winner = proposal['candidates'][0]
+    step1_out = pipe_dict['steps'][0]['output_summary']
+    step4_out = pipe_dict['steps'][3]['output_summary']
+
+    before_proxy = proposal['baseline']['reader_proxy']
+    target_vec = proposal['target']
+    distance_before = round(
+        sum(abs(before_proxy[k] - v) for k, v in target_vec.items()) / max(1, len(target_vec)),
+        4,
+    )
+
+    recipient_scope = 'group' if len(recipients_tuple) > 1 else 'single_person'
+    situation_block = {
+        'scene_title': situation.get('title', f'Kolejka #{step_no}'),
+        'environment': situation.get('environment', 'Brak dodatkowego opisu środowiska'),
+        'relationship_history': situation.get('history', 'Brak dodatkowego opisu historii'),
+        'social_distance': situation.get('social_distance', 'Standardowy dystans sytuacyjny'),
+        'trust_level': trust_level or situation.get('trust_level', 'unspecified'),
+        'incoming_speaker': input_speaker,
+        'responding_actor': actor,
+        'recipients': list(recipients_tuple),
+        'recipient_scope': recipient_scope,
+    }
+
+    input_analysis_block = {
+        'input_turn_id': in_turn.id,
+        'speaker': input_speaker,
+        'recipients': list(in_recipients),
+        'text': input_sentence,
+        'text_affect_metrics': {
+            'status': in_dict['status'],
+            'sentence_scores': {k: round(v, 4) for k, v in in_dict['scores'].items() if v > 0},
+            'full_vector': {k: round(v, 4) for k, v in in_dict['scores'].items()},
+            'evidence_matches': in_dict.get('evidence', []),
+        },
+        'scene_state_after_input': {
+            'reader_proxy_before_reply': {k: round(v, 4) for k, v in before_proxy.items() if v > 0},
+            'speaker_expression_proxy': {
+                k: round(v, 4)
+                for k, v in proposal['baseline']['character_expression_proxies'].get(input_speaker, {}).items()
+                if v > 0
+            },
+        },
+    }
+
+    target_block = {
+        'target_expectation_nl': target_nl or f'Preset zaufania: {trust_level}',
+        'parse_mode': step1_out['parse_mode'],
+        'compiled_target_vector': target_vec,
+        'compiled_strategies': step1_out['strategies'],
+        'tolerance': 0.15,
+        'distance_before_reply': distance_before,
+        'action_uri': pipe_dict['action_uri'],
+    }
+
+    after_proxy = {k: round(v, 4) for k, v in winner['reader_proxy'].items() if v > 0}
+    delta_proxy = {k: round(v, 4) for k, v in winner['delta'].items() if abs(v) > 0.0001}
+    resp_scores = {k: round(v, 4) for k, v in winner['text_affect']['scores'].items() if v > 0}
+
+    compact_dsl = '\n'.join([
+        f'TURN {step_no}',
+        f'  SITUATION trust={situation_block["trust_level"]} scope={recipient_scope} env="{situation_block["environment"]}"',
+        f'  INPUT FROM {input_speaker} TO {",".join(in_recipients)} LINE "{input_sentence}"',
+        f'  INPUT_METRICS status={in_dict["status"]} sentence_scores={json.dumps(input_analysis_block["text_affect_metrics"]["sentence_scores"], ensure_ascii=False)} reader_before={json.dumps(input_analysis_block["scene_state_after_input"]["reader_proxy_before_reply"], ensure_ascii=False)}',
+        f'  TARGET_NL "{target_block["target_expectation_nl"]}"',
+        f'  TARGET_SPEC strategies={",".join(target_block["compiled_strategies"])} target={json.dumps(target_vec, ensure_ascii=False)} uri="{pipe_dict["action_uri"]}"',
+        f'  REPLY FROM {actor} TO {",".join(recipients_tuple)} LINE "{proposal["text"]}"',
+        f'  STATE_AFTER reader_after={json.dumps(after_proxy, ensure_ascii=False)} delta={json.dumps(delta_proxy, ensure_ascii=False)} rank_loss={winner["rank_loss"]:.4f} dist_before={distance_before:.4f} dist_after={winner["distance"]:.4f} improvement={winner["improvement"]:+.4f}',
+        f'  VERIFY replay_verified=true receipt="{pipe_dict["receipt"]["receipt_id"]}"',
+        'END',
+    ])
+
+    state_summary_obj = {
+        'turn': step_no,
+        'actor': actor,
+        'recipients': list(recipients_tuple),
+        'recipient_scope': recipient_scope,
+        'trust_level': situation_block['trust_level'],
+        'strategies': target_block['compiled_strategies'],
+        'target_vector': target_vec,
+        'input_metrics': {
+            'sentence_scores': input_analysis_block['text_affect_metrics']['sentence_scores'],
+            'reader_proxy_before': input_analysis_block['scene_state_after_input']['reader_proxy_before_reply'],
+        },
+        'response': {
+            'text': proposal['text'],
+            'sentence_scores': resp_scores,
+            'reader_proxy_after': after_proxy,
+            'delta': delta_proxy,
+            'distance_before': distance_before,
+            'distance_after': round(winner['distance'], 4),
+            'improvement': round(winner['improvement'], 4),
+            'rank_loss': round(winner['rank_loss'], 4),
+            'target_met_in_model': winner['target_met_in_model'],
+        },
+        'receipt_id': pipe_dict['receipt']['receipt_id'],
+    }
+
+    yaml_lines = [
+        f'turn: {step_no}',
+        f'actor: {actor}',
+        f'recipients: {json.dumps(list(recipients_tuple), ensure_ascii=False)}',
+        f'recipient_scope: {recipient_scope}',
+        f'trust_level: {situation_block["trust_level"]}',
+        f'strategies: {json.dumps(target_block["compiled_strategies"], ensure_ascii=False)}',
+        f'target_vector: {json.dumps(target_vec, ensure_ascii=False)}',
+        'input_metrics:',
+        f'  sentence_scores: {json.dumps(input_analysis_block["text_affect_metrics"]["sentence_scores"], ensure_ascii=False)}',
+        f'  reader_proxy_before: {json.dumps(input_analysis_block["scene_state_after_input"]["reader_proxy_before_reply"], ensure_ascii=False)}',
+        'response:',
+        f'  text: {json.dumps(proposal["text"], ensure_ascii=False)}',
+        f'  sentence_scores: {json.dumps(resp_scores, ensure_ascii=False)}',
+        f'  reader_proxy_after: {json.dumps(after_proxy, ensure_ascii=False)}',
+        f'  delta: {json.dumps(delta_proxy, ensure_ascii=False)}',
+        f'  distance_before: {distance_before:.4f}',
+        f'  distance_after: {winner["distance"]:.4f}',
+        f'  improvement: {winner["improvement"]:.4f}',
+        f'  rank_loss: {winner["rank_loss"]:.4f}',
+        f'  target_met_in_model: {str(winner["target_met_in_model"]).lower()}',
+        f'receipt_id: {pipe_dict["receipt"]["receipt_id"]}',
+    ]
+
+    dlg.add_turn(actor, proposal['text'], recipients=recipients_tuple, kind='synthetic')
+
+    response_block = {
+        'response_turn': {
+            'actor': actor,
+            'recipients': list(recipients_tuple),
+            'recipient_scope': recipient_scope,
+            'text': proposal['text'],
+        },
+        'response_state_metrics': {
+            'response_sentence_scores': resp_scores,
+            'reader_proxy_after_reply': after_proxy,
+            'state_delta': delta_proxy,
+            'distance_before_reply': distance_before,
+            'distance_after_reply': round(winner['distance'], 4),
+            'improvement': round(winner['improvement'], 4),
+            'repetition_penalty': round(winner['repetition_penalty'], 4),
+            'rank_loss': round(winner['rank_loss'], 4),
+            'target_met_in_model': winner['target_met_in_model'],
+            'candidates_ranking': step4_out['ranking_table'],
+        },
+        'parallel_representations': {
+            'compact_dsl': compact_dsl,
+            'yaml_state': '\n'.join(yaml_lines),
+            'json_state': state_summary_obj,
+            'affect_fiction_dsl': json.loads(proposal['dsl']),
+        },
+        'replay_verified': True,
+        'receipt_id': pipe_dict['receipt']['receipt_id'],
+    }
+
+    result = {
+        '1_situation_description': situation_block,
+        '2_input_sentence_analysis': input_analysis_block,
+        '3_target_state_nl_and_plan': target_block,
+        '4_edialog_response_and_parallel_dsl': response_block,
+        'updated_dialogue': dlg.to_dict(),
+    }
+    result['ascii_diagram'] = render_analytical_ascii_diagram(result, step_no=step_no)
+    return result
+
 

@@ -15,6 +15,7 @@ Najpierw zainstaluj projekt według [quickstart](../docs/INFORMATION/QUICKSTART.
 | [strategy_fixture.py](strategy_fixture.py) | Kontrakt callbacku na stałych wariantach | brak |
 | [fiction_demo.py](fiction_demo.py) | Pełniejszy scenariusz literacki | brak |
 | [mcp_process_pipeline.py](mcp_process_pipeline.py) | 6-etapowy potok procesowy MCP + DockURI (`uri()`), kwit `CompositeExecutionReceipt` i logi SHA-256 | brak (opcjonalnie `--live-subllm`) |
+| [analytical_nl_dsl_flow.py](analytical_nl_dsl_flow.py) | 4-blokowy rozkład analityczny każdej kolejki (1. Sytuacja -> 2. Metryki zdania -> 3. Cel NL -> 4. Odpowiedź dla osoby/grupy + DSL/YAML/JSON + diagram ASCII) | brak (opcjonalnie `--live-subllm`) |
 | [demo.py](demo.py) | Wcześniejszy model wspierającego dialogu | brak |
 | [backend_fixture.py](backend_fixture.py) | Wcześniejszy adapter JSON | brak |
 | [image_context.py](image_context.py) | Piksele, atmosfera i kontekst obrazu | Pillow |

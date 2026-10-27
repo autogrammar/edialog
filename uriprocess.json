@@ -13,6 +13,7 @@
     "proc://edialog/report/emit/v1",
     "proc://edialog/pipeline/run/v1",
     "proc://edialog/scene/analyze/v1",
-    "proc://edialog/dsl/replay/v1"
+    "proc://edialog/dsl/replay/v1",
+    "proc://edialog/turn/analyze_and_respond/v1"
   ]
 }

@@ -109,6 +109,15 @@
         "input": { "type": "object" },
         "output": { "type": "object" }
       }
+    },
+    "turn.analyze_and_respond": {
+      "effect": "idempotent",
+      "description": "Analyze input sentence emotional metrics, compile NL expectations, and generate response for person/group with parallel DSL/JSON/YAML state and ASCII diagram.",
+      "timeout_ms": 15000,
+      "schema": {
+        "input": { "type": "object" },
+        "output": { "type": "object" }
+      }
     }
   }
 }

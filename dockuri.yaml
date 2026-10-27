@@ -72,3 +72,11 @@ processes:
     effect: pure
     description: "Odtwarza zapisany plan DSL affect-fiction 0.3 na dialogu i opcjonalnie dopisuje wybraną kwestię (continue_scene)."
     run: ["edialog-mcp", "uri", "proc://edialog/dsl/replay/v1"]
+
+  - uri: proc://edialog/turn/analyze_and_respond/v1
+    aliases:
+      - edialog://turn/analyze_and_respond/v1
+    effect: idempotent
+    description: "Analizuje zdanie wejściowe (metryki emocji), kompiluje oczekiwania NL i generuje odpowiedź dla osoby/grupy wraz z równoległym opisem DSL/JSON/YAML oraz diagramem ASCII."
+    run: ["edialog-mcp", "uri", "proc://edialog/turn/analyze_and_respond/v1"]
+

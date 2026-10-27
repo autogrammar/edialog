@@ -11,6 +11,7 @@ from edialog import (
     EDialogMCPServer,
     Participant,
     ValidationError,
+    analyze_and_respond_turn,
     build_workflow_dag,
     dispatch_probe,
     get_registry_manifest,
@@ -228,5 +229,37 @@ def test_uds_daemon_ping_latency(tmp_path):
     assert resp['result']['status'] == 'pong'
     assert elapsed_ms < 20.0
     th.join(timeout=1.0)
+
+
+def test_analyze_and_respond_turn_and_uri():
+    rec = uri(
+        'proc://edialog/turn/analyze_and_respond/v1',
+        {
+            'situation': {
+                'title': 'Test analityczny',
+                'environment': 'Hol biurowca podczas ulewy',
+                'history': 'Pierwsza rozmowa',
+                'social_distance': 'Dystans zawodowy',
+            },
+            'trust_level': 'low',
+            'input_speaker': 'klaudia',
+            'input_recipients': ['tomasz'],
+            'input_sentence': 'Boję się, że przez tę burzę utknęliśmy tu na dobre.',
+            'actor': 'tomasz',
+            'recipients': ['klaudia'],
+            'target_nl': 'Cel: neutralnosc=0,70; radosc=0,35; strategia: wyciszenie i ulga',
+        },
+    )
+    assert '1_situation_description' in rec
+    assert '2_input_sentence_analysis' in rec
+    assert '3_target_state_nl_and_plan' in rec
+    assert '4_edialog_response_and_parallel_dsl' in rec
+    assert 'ascii_diagram' in rec
+    assert rec['2_input_sentence_analysis']['text_affect_metrics']['sentence_scores'].get('scared', 0) > 0
+    parallel = rec['4_edialog_response_and_parallel_dsl']['parallel_representations']
+    assert 'TURN 1' in parallel['compact_dsl']
+    assert 'target_vector:' in parallel['yaml_state']
+    assert parallel['json_state']['actor'] == 'tomasz'
+
 
 
