@@ -2,6 +2,16 @@
 
 ## [Unreleased]
 
+## [0.4.2] - 2026-10-27
+
+### Docs
+- Update README.md
+
+### Other
+- Update scripts/install-agent-hosts.sh
+- Update scripts/runtime.sh
+- Update scripts/sync-oqlts-vendor.sh
+
 ## [0.4.1] - 2026-10-27
 
 ### Docs

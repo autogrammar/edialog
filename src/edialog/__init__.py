@@ -9,7 +9,7 @@ from .fiction import (FictionRequest, FictionProposal, FictionEngine, CallableFi
                       parse_fiction_request, evaluate_annotations)
 from .backends import OllamaJSON, SubLLMJSON
 
-__version__ = '0.4.1'
+__version__ = '0.4.2'
 __all__ = ['DialogueEngine', 'Proposal', 'Dialogue', 'Participant', 'Goal', 'Request',
            'Turn', 'Reading', 'CallableJSONBackend', 'ControlledNL', 'EDialogError',
            'NeedsClarification', 'UnsupportedObjective', 'ValidationError', 'BackendError',
