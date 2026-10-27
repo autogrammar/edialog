@@ -68,7 +68,7 @@ contract_path() {
 import json, sys
 contract = json.load(open(sys.argv[1], encoding="utf-8"))
 hooks = contract.get("hook", {}).get("additionalHooks", [])
-allowed = {".githooks/commit-msg", ".githooks/prepare-commit-msg"}
+allowed = {".githooks/commit-msg", ".githooks/prepare-commit-msg", ".githooks/pre-push"}
 if (not isinstance(hooks, list)
         or any(not isinstance(hook, str) or hook not in allowed for hook in hooks)
         or len(hooks) != len(set(hooks))):
@@ -268,6 +268,13 @@ paragraph = [
     "Allocate tickets only through that script. Never commit on main or a dirty",
     "primary checkout. Run `./scripts/install-agent-hosts.sh` once per clone so",
     "the git hook is active.",
+    "Put every final result in the owning repository through its ticket:",
+    "reports and analyses under `docs/` per `wellmanifest/docs` (`check.py --prepare`",
+    "before writing, `--deliverable` after commit), error runbooks under `errors/`",
+    "per `wellmanifest/logs`. Never leave a final result only in /tmp, a scratchpad,",
+    "`$HOME/.local/state` or the chat. Before claiming done run",
+    "`./project/governance-check.sh` and the Wellman standards check (`wellman check`);",
+    "a required standard that is not installed is an error to fix, not to skip.",
 ]
 text = path.read_text(encoding="utf-8") if path.exists() else ""
 lines = text.splitlines()

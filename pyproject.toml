@@ -40,5 +40,11 @@ badge_color_thresholds = { low = 1.0, medium = 5.0, high = 10.0, critical = 50.0
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-pythonpath = ["src"]
+pythonpath = [".", "src"]
+addopts = "-p wellmanifest_governance"
 
+
+[tool.wellmanifest]
+standard = "0.20.119"
+revision = "07d2cf4c34ea308929a6a2c78497f20901a58b3e"
+gate = "project/governance-check.sh"
