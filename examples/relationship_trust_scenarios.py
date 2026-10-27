@@ -5,7 +5,7 @@ Pokazuje, jak w edialog w połączeniu z subactor/subllm można:
 2. Wprowadzić zmienne środowiska (pogoda, pora dnia, otoczenie).
 3. Generować diametralnie różne odpowiedzi za pośrednictwem author_brief i FictionEngine.
 """
-from edialog import Dialogue, Participant, FictionEngine, CallableFictionBackend, SubLLMJSON
+from edialog import Dialogue, Participant, FictionEngine, FictionRequest, CallableFictionBackend, SubLLMJSON
 
 
 def test_trust_and_environmental_distance():
@@ -17,21 +17,34 @@ def test_trust_and_environmental_distance():
             "social_distance": "duży / formalny dystans nieznajomych (per 'Pani')",
             "history": "Nigdy wcześniej się nie widzieli, przypadkowe spotkanie na ulicy.",
             "environment": "Zimna listopadowa ulewa, puste skrzyżowanie, migające żółte światło.",
-            "prompt_goal": "Tomasz (40 l.) do Klaudii (25 l.). Dystans chłodny, z klasą, bez spoufalania się."
+            "request": FictionRequest(target={"nothing": 0.7, "happy": 0.1}, strategies=("quiet",)),
+            "boundary_rules": [
+                "Pełny szacunek do granic osobistych nieznajomej osoby.",
+                "Forma grzecznościowa 'Pani', spokojny ton, zero narzucania się i zero wydawania poleceń."
+            ]
         },
         {
-            "trust": "niskie / ostrożne (znajomość ze słyszenia, niepewność)",
-            "social_distance": "średni dystans / badanie gruntu / ostrożność",
-            "history": "Mijają się w biurowcu, Klaudia uważa go za człowieka tajemniczego i niedostępnego.",
-            "environment": "Godzina szczytu, tłum pod wiatą przystanku, gęsty deszcz.",
-            "prompt_goal": "Tomasz (40 l.) do Klaudii (25 l.). Ton intrygujący, zbijający z tropu, rzucający wyzwanie."
+            "trust": "niskie / ostrożne (znajomość z widzenia w biurowcu)",
+            "social_distance": "uprzejmy dystans z nutą niedopowiedzenia (bez spoufalania się)",
+            "history": "Mijają się w biurowcu, dotychczas zamienili tylko zdawkowe 'cześć' w windzie.",
+            "environment": "Koniec pracy, ulewa, stoją pod zadaszeniem wejścia do biurowca.",
+            "request": FictionRequest(target={"nothing": 0.65, "excited": 0.35}, strategies=("quiet", "anticipation")),
+            "boundary_rules": [
+                "Szanuj granice osobiste: zero rozkazów, zero presji, zero inwazyjności.",
+                "Unikaj banalnego small-talku o pogodzie.",
+                "Zastosuj subtelną, lekko ironiczną uwagę nawiązującą do wyjścia z pracy — zostawiając jej 100% swobody podjęcia rozmowy."
+            ]
         },
         {
-            "trust": "wysokie (zbudowana zażyłość, wzajemne sekrety)",
+            "trust": "wysokie (zbudowana zażyłość, wzajemne zaufanie)",
             "social_distance": "bliski / intymny (per 'Ty', czułość, bezpośredniość)",
-            "history": "Para po kilku randkach, duża chemia i wzajemne zaufanie.",
+            "history": "Para po kilku randkach, duża chemia i wzajemne poczucie bezpieczeństwa.",
             "environment": "Ciepły letni deszcz o północy, puste uliczki starego miasta po wspólnej kolacji.",
-            "prompt_goal": "Tomasz (40 l.) do Klaudii (25 l.). Ciepły, magnetyczny ton, głębokie zaufanie i flirt."
+            "request": FictionRequest(target={"happy": 0.7, "excited": 0.6}, strategies=("reunion", "anticipation")),
+            "boundary_rules": [
+                "Ciepły, bezpośredni ton wynikający z obopólnej zgody i bliskości.",
+                "Naturalna swoboda i wspólnota doświadczenia ('my')."
+            ]
         }
     ]
 
@@ -51,19 +64,19 @@ def test_trust_and_environmental_distance():
                     "interpersonal_distance": sc["social_distance"],
                     "relationship_history": sc["history"],
                     "environment_context": sc["environment"],
-                    "rule": "Dostosuj dobór słów, formę gramatyczną (Pani vs Ty) i intymność do podanego zaufania."
+                    "boundary_rules": sc["boundary_rules"],
                 }
             return transport(enriched)
 
         custom_engine = FictionEngine(backend=CallableFictionBackend(complete_with_brief))
         d = Dialogue((Participant("tomasz", "Tomasz (40 l.)"), Participant("klaudia", "Klaudia (25 l.)")))
-        d.add_turn("klaudia", f"Klaudia stoi na światłach na rogu ulicy. {sc['environment']}", recipients=("tomasz",))
+        d.add_turn("klaudia", f"Klaudia zatrzymuje się przed ścianą deszczu i spogląda na zegarek. {sc['environment']}", recipients=("tomasz",))
 
         prop = custom_engine.generate(
             d,
             actor="tomasz",
             recipients=("klaudia",),
-            instruction=sc["prompt_goal"]
+            request=sc["request"],
         )
 
         print(f"\nWybrana kwestia Tomasza: \"{prop.text}\"")

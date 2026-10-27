@@ -23,7 +23,7 @@
     "max_words": 600,
     "max_bytes": 12288
   },
-  "source_digest": "4018be11ee81ac0a84d4d7c6e88da0d6d22af0d256d70e9ee86911c977c30b49",
+  "source_digest": "5e398dda0c6813a90271c3767636fc17da533316945b0775bd82974aa708f2fa",
   "upstream_adoption": {
     "status": "not_configured",
     "repository": null,
