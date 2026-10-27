@@ -53,11 +53,17 @@ processes:
   - uri: proc://edialog/pipeline/run/v1
     aliases:
       - proc://edialog/fiction/generate/v1
-      - proc://edialog/run/instruction/v1
       - edialog://pipeline/run/v1
     effect: idempotent
     description: "Kompletny 6-etapowy potok procesowy edialog zwracający propozycję kwestii, ślad każdego etapu, kwit wykonania, łańcuch logów i raport reużycia."
     run: ["edialog-mcp", "uri", "proc://edialog/pipeline/run/v1"]
+
+  - uri: proc://edialog/run/instruction/v1
+    aliases:
+      - edialog://run/instruction/v1
+    effect: idempotent
+    description: "Generyczny punkt wywołania instrukcji procesowej edialog (DOCK-DISP-001)."
+    run: ["edialog-mcp", "uri", "proc://edialog/run/instruction/v1"]
 
   - uri: proc://edialog/scene/analyze/v1
     aliases:
@@ -79,4 +85,3 @@ processes:
     effect: idempotent
     description: "Analizuje zdanie wejściowe (metryki emocji), kompiluje oczekiwania NL i generuje odpowiedź dla osoby/grupy wraz z równoległym opisem DSL/JSON/YAML oraz diagramem ASCII."
     run: ["edialog-mcp", "uri", "proc://edialog/turn/analyze_and_respond/v1"]
-

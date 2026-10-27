@@ -7,7 +7,7 @@ import re
 
 from .affect import EMOTION_CODES, EmotionLexicon, TextEmotionAnalyzer, digest, tokens, vector
 from .errors import BackendError, NeedsClarification, ValidationError
-from .models import Dialogue, keys, text, unit
+from .models import CallableBackendBase, Dialogue, keys, text, unit
 from .nl import fold, visible_context
 from .vision import ImageAffect
 
@@ -156,12 +156,9 @@ def _image(value):
     return value
 
 
-class CallableFictionBackend:
+class CallableFictionBackend(CallableBackendBase):
     """Provider-neutral NL planning and candidate generation. No network client."""
-    def __init__(self, complete):
-        if not callable(complete):
-            raise ValidationError('complete must be callable')
-        self.complete = complete
+    _error_message = 'complete must be callable'
 
     def parse(self, instruction):
         text(instruction, 'instruction', 4000)

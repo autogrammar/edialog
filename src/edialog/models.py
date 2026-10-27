@@ -46,6 +46,29 @@ def keys(obj, required, optional=()):
         raise ValidationError(f'Expected fields {sorted(required)}; optional {sorted(optional)}')
 
 
+class CallableBackendBase:
+    """Shared base for sync callable(dict)->dict adapters without network state."""
+    _error_message = 'Backend must be callable'
+
+    def __init__(self, complete):
+        if not callable(complete):
+            raise ValidationError(self._error_message)
+        self.complete = complete
+
+
+def load_json_file(path):
+    return json.loads(path.read_text(encoding='utf-8'))
+
+
+def emit_cli_json(result, out_path=None):
+    encoded = json.dumps(result, ensure_ascii=False, indent=2, allow_nan=False)
+    if out_path:
+        out_path.write_text(encoded + '\n', encoding='utf-8')
+    else:
+        print(encoded)
+    return 0
+
+
 @dataclass(frozen=True)
 class Participant:
     id: str
