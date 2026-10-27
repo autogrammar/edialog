@@ -45,12 +45,14 @@ print(p.text)
 ## Dokumentacja i przykłady
 
 - [Dokumentacja](docs/README.md) — indeks instrukcji, funkcji, ograniczeń i decyzji.
+- [Procesowy serwer MCP i potok URI](docs/FEATURE/MCP_PROCESS_PIPELINE.md) — 6-etapowy potok `proc://edialog/...`, `CompositeExecutionReceipt`, logi SHA-256 i reużycie przez `uri()`.
+- [Manifest DockURI](dockuri.json) oraz [katalog błędów i runbooków](errors/README.md).
 - [Przykłady](examples/README.md) — uruchamialne scenariusze offline i live.
 - [Podłączenie LLM](docs/INFORMATION/LLM_CONNECTION.md) — model, transport i granice oceny.
 - [Migracja nazwy](docs/REFACTORING/PROJECT_RENAME.md) — importy, wyjątki, CLI i zgodność DSL.
 - [Changelog](CHANGELOG.md).
 
-CLI: `edialog-fiction` dla literatury, `edialog` dla wcześniejszego trybu wspierającego.
+CLI: `edialog-mcp` dla serwera MCP i procesów URI (`proc://edialog/...`), `edialog-fiction` dla literatury, `edialog` dla wcześniejszego trybu wspierającego.
 
 ## Weryfikacja
 

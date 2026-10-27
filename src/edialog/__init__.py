@@ -8,6 +8,18 @@ from .vision import ImageAffect, CallableVisionBackend, analyze_image
 from .fiction import (FictionRequest, FictionProposal, FictionEngine, CallableFictionBackend,
                       parse_fiction_request, evaluate_annotations)
 from .backends import OllamaJSON, SubLLMJSON
+from .pipeline import (
+    PROCESS_CATALOG,
+    TRUST_PRESETS,
+    ProcessPipelineResult,
+    ProcessStepTrace,
+    build_workflow_dag,
+    render_uri_call_snippet,
+    run_process_pipeline,
+    uri,
+    uri_jsonl,
+)
+from .mcp import EDialogMCPServer, get_registry_manifest
 
 __version__ = '0.4.4'
 __all__ = ['DialogueEngine', 'Proposal', 'Dialogue', 'Participant', 'Goal', 'Request',
@@ -16,4 +28,7 @@ __all__ = ['DialogueEngine', 'Proposal', 'Dialogue', 'Participant', 'Goal', 'Req
            'EMOTION_CODES', 'EmotionLexicon', 'TextAffect', 'TextEmotionAnalyzer',
            'ImageAffect', 'CallableVisionBackend', 'analyze_image', 'FictionRequest',
            'FictionProposal', 'FictionEngine', 'CallableFictionBackend',
-           'parse_fiction_request', 'evaluate_annotations', 'OllamaJSON', 'SubLLMJSON']
+           'parse_fiction_request', 'evaluate_annotations', 'OllamaJSON', 'SubLLMJSON',
+           'PROCESS_CATALOG', 'TRUST_PRESETS', 'ProcessStepTrace', 'ProcessPipelineResult',
+           'build_workflow_dag', 'run_process_pipeline', 'uri', 'uri_jsonl',
+           'render_uri_call_snippet', 'EDialogMCPServer', 'get_registry_manifest']

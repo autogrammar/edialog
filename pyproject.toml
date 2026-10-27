@@ -17,6 +17,7 @@ images = ["Pillow>=10.4"]
 [project.scripts]
 edialog = "edialog.cli:main"
 edialog-fiction = "edialog.fiction_cli:main"
+edialog-mcp = "edialog.mcp:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]

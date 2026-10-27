@@ -20,6 +20,7 @@ Dokumenty mają stabilne ścieżki i opisują jeden temat. Metadane stosują [lo
 - [Wagi emocji zależne od słów i kontekstu](FEATURE/CONTEXTUAL_EMOTION_WEIGHTS.md) — `contextual-emotion-weights`.
 - [Obraz jako kontekst atmosfery sceny](FEATURE/IMAGE_CONTEXT.md) — `image-context`.
 - [Odtwarzanie planu i kontynuacja sceny](FEATURE/DSL_REPLAY.md) — `dsl-replay`.
+- [Procesowy serwer MCP, potok URI i raporty wykonania](FEATURE/MCP_PROCESS_PIPELINE.md) — `mcp-process-pipeline`.
 
 ## Analiza i weryfikacja
 

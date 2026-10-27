@@ -14,6 +14,7 @@ Najpierw zainstaluj projekt według [quickstart](../docs/INFORMATION/QUICKSTART.
 | [reader_evaluation.py](reader_evaluation.py) | MAE na danych syntetycznych | brak |
 | [strategy_fixture.py](strategy_fixture.py) | Kontrakt callbacku na stałych wariantach | brak |
 | [fiction_demo.py](fiction_demo.py) | Pełniejszy scenariusz literacki | brak |
+| [mcp_process_pipeline.py](mcp_process_pipeline.py) | 6-etapowy potok procesowy MCP + DockURI (`uri()`), kwit `CompositeExecutionReceipt` i logi SHA-256 | brak (opcjonalnie `--live-subllm`) |
 | [demo.py](demo.py) | Wcześniejszy model wspierającego dialogu | brak |
 | [backend_fixture.py](backend_fixture.py) | Wcześniejszy adapter JSON | brak |
 | [image_context.py](image_context.py) | Piksele, atmosfera i kontekst obrazu | Pillow |
@@ -34,6 +35,8 @@ Runner wykonuje dziesięć przykładów bez obrazów lub jedenaście z `--images
 | [romance_street_scenarios.py](romance_street_scenarios.py) | Spotkanie uliczne: 20-letni chłopak vs 40-letni mężczyzna zagadujący 25-letnią kobietę |
 | [aloof_street_scenarios.py](aloof_street_scenarios.py) | Strategia obojętności, emocjonalnej niejednoznaczności i budowania napięcia (`suspense`) |
 | [four_turns_dialogues.py](four_turns_dialogues.py) | 4 pełne kolejki dialogowe z dynamiczną reakcją kobiety na chłodny dystans mężczyzny |
+| [romance_trajectory_analysis.py](romance_trajectory_analysis.py) | Analiza trajektorii wektorów afektu (`reader_proxy`) przez 4 kolejki rozmowy |
+| [relationship_trust_scenarios.py](relationship_trust_scenarios.py) | Wpływ poziomu zaufania (`zero`, `low`, `high`, `rebuilding`), dystansu i granic osobistych na generowane kwestie |
 | [llm_strategy.py](llm_strategy.py) | Ollama, fakty autorskie, relacje i konkretny brief strategii |
 | [ollama_fiction.py](ollama_fiction.py) | Swobodne NL i opcjonalny obraz |
 | [image_context.py](image_context.py) z `--model` | Model wizyjny zamiast samej analizy palety |

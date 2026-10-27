@@ -1,0 +1,89 @@
+{
+  "$schema": "https://wellmanifest.org/schemas/dockuri-v1.json",
+  "app": "edialog",
+  "version": "0.4.4",
+  "description": "Auditable natural-language dialogue planning, contextual affect scoring, and 6-stage transparent URI process pipeline.",
+  "transport": {
+    "type": "stdio",
+    "socket": "~/.dockuri/run/edialog.sock",
+    "auto_spawn": true,
+    "spawn_cmd": ["edialog-mcp", "serve"],
+    "fallback": "native"
+  },
+  "procedures": {
+    "__ping__": {
+      "uri": "proc://edialog/system/ping/v1",
+      "effect": "pure",
+      "description": "System health and latency probe (DOCK-PNG-001).",
+      "inputSchema": { "type": "object" },
+      "outputSchema": { "type": "object" }
+    },
+    "nl.parse": {
+      "uri": "proc://edialog/nl/parse/v1",
+      "effect": "pure",
+      "description": "Step 1: Parse NL instruction, trust_level preset, and author_brief into FictionRequest and canonical Action URI.",
+      "inputSchema": { "type": "object" },
+      "outputSchema": { "type": "object" }
+    },
+    "context.filter": {
+      "uri": "proc://edialog/context/filter/v1",
+      "effect": "pure",
+      "description": "Step 2: Filter visible dialogue history and compute baseline reader_proxy and character_expression_proxies.",
+      "inputSchema": { "type": "object" },
+      "outputSchema": { "type": "object" }
+    },
+    "candidates.generate": {
+      "uri": "proc://edialog/candidates/generate/v1",
+      "effect": "read",
+      "description": "Step 3: Generate candidate dialogue lines from deterministic templates, SubLLM (subactor/subllm), or Ollama.",
+      "inputSchema": { "type": "object" },
+      "outputSchema": { "type": "object" }
+    },
+    "affect.score": {
+      "uri": "proc://edialog/affect/score/v1",
+      "effect": "pure",
+      "description": "Step 4: Score and rank candidate lines against target affect vector with contextual lexical rules and repetition penalty.",
+      "inputSchema": { "type": "object" },
+      "outputSchema": { "type": "object" }
+    },
+    "dsl.compile": {
+      "uri": "proc://edialog/dsl/compile/v1",
+      "effect": "pure",
+      "description": "Step 5: Compile affect-fiction 0.3 DSL and verify deterministic replay().",
+      "inputSchema": { "type": "object" },
+      "outputSchema": { "type": "object" }
+    },
+    "report.emit": {
+      "uri": "proc://edialog/report/emit/v1",
+      "effect": "pure",
+      "description": "Step 6: Emit CompositeExecutionReceipt, hash-chained event logs, and auditable execution report.",
+      "inputSchema": { "type": "object" },
+      "outputSchema": { "type": "object" }
+    },
+    "pipeline.run": {
+      "uri": "proc://edialog/pipeline/run/v1",
+      "aliases": [
+        "proc://edialog/fiction/generate/v1",
+        "proc://edialog/run/instruction/v1"
+      ],
+      "effect": "read",
+      "description": "Run the complete 6-stage transparent edialog pipeline and return proposal, step traces, receipt, logs, and reuse snippets.",
+      "inputSchema": { "type": "object" },
+      "outputSchema": { "type": "object" }
+    },
+    "scene.analyze": {
+      "uri": "proc://edialog/scene/analyze/v1",
+      "effect": "pure",
+      "description": "Analyze emotional trajectory of an existing dialogue.",
+      "inputSchema": { "type": "object" },
+      "outputSchema": { "type": "object" }
+    },
+    "dsl.replay": {
+      "uri": "proc://edialog/dsl/replay/v1",
+      "effect": "pure",
+      "description": "Replay an affect-fiction 0.3 DSL plan and optionally append the winning turn to the scene.",
+      "inputSchema": { "type": "object" },
+      "outputSchema": { "type": "object" }
+    }
+  }
+}
