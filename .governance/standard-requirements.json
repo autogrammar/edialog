@@ -1,19 +1,52 @@
 {
   "schema": "wellman.standard-requirements/v1",
   "profiles": [
-    "baseline"
+    "baseline",
+    "domain-pack"
   ],
   "requirements": [
     {
+      "id": "wellmanifest/code-dsl",
+      "minimumLevel": "S4"
+    },
+    {
+      "id": "wellmanifest/dockuri",
+      "minimumLevel": "S3"
+    },
+    {
       "id": "wellmanifest/docs",
       "minimumLevel": "S3"
+    },
+    {
+      "id": "wellmanifest/dsl",
+      "minimumLevel": "S4"
     },
     {
       "id": "wellmanifest/git-lifecycle",
       "minimumLevel": "S4"
     },
     {
+      "id": "wellmanifest/lifecycle",
+      "minimumLevel": "S4"
+    },
+    {
+      "id": "wellmanifest/llm",
+      "minimumLevel": "S3"
+    },
+    {
       "id": "wellmanifest/logs",
+      "minimumLevel": "S3"
+    },
+    {
+      "id": "wellmanifest/mcp",
+      "minimumLevel": "S4"
+    },
+    {
+      "id": "wellmanifest/merge",
+      "minimumLevel": "S4"
+    },
+    {
+      "id": "wellmanifest/modularity",
       "minimumLevel": "S3"
     },
     {
@@ -21,8 +54,44 @@
       "minimumLevel": "S4"
     },
     {
+      "id": "wellmanifest/nl-api-llm",
+      "minimumLevel": "S4"
+    },
+    {
+      "id": "wellmanifest/nl-dsl-llm",
+      "minimumLevel": "S4"
+    },
+    {
+      "id": "wellmanifest/nl-uri-dsl-llm",
+      "minimumLevel": "S0"
+    },
+    {
+      "id": "wellmanifest/policy-dsl",
+      "minimumLevel": "S4"
+    },
+    {
+      "id": "wellmanifest/priority",
+      "minimumLevel": "S3"
+    },
+    {
+      "id": "wellmanifest/report",
+      "minimumLevel": "S3"
+    },
+    {
+      "id": "wellmanifest/reuse",
+      "minimumLevel": "S3"
+    },
+    {
       "id": "wellmanifest/ticket-lifecycle",
       "minimumLevel": "S3"
+    },
+    {
+      "id": "wellmanifest/uriprocess",
+      "minimumLevel": "S0"
+    },
+    {
+      "id": "wellmanifest/validation-attestation",
+      "minimumLevel": "S4"
     },
     {
       "id": "wellmanifest/worktrees",

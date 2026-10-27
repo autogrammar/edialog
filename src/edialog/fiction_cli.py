@@ -1,21 +1,16 @@
 """Command-line fiction analysis, ranking and reproducible plan replay."""
 import argparse
-import json
 from pathlib import Path
 import sys
 
 from .affect import EMOTION_CODES, EmotionLexicon, TextEmotionAnalyzer
 from .errors import EDialogError
 from .fiction import FictionEngine, FictionRequest, evaluate_annotations
-from .models import Dialogue
+from .models import Dialogue, emit_cli_json, load_json_file as load
 from .vision import analyze_image
 
 
-def load(path):
-    return json.loads(path.read_text(encoding='utf-8'))
-
-
-def main(argv=None):
+def _build_fiction_parser():
     parser = argparse.ArgumentParser(description='edialog 0.4: fictional emotional tone and arcs')
     sub = parser.add_subparsers(dest='command', required=True)
     sub.add_parser('map')
@@ -51,45 +46,49 @@ def main(argv=None):
     evaluate = sub.add_parser('evaluate')
     evaluate.add_argument('annotations', type=Path)
     evaluate.add_argument('--out', type=Path)
-    args = parser.parse_args(argv)
+    return parser
+
+
+def _execute_fiction_command(args):
+    lexicon = EmotionLexicon(load(args.lexicon)) if getattr(args, 'lexicon', None) else None
+    analyzer = TextEmotionAnalyzer(lexicon)
+    backend = None
+    if getattr(args, 'subllm', False):
+        from .backends import SubLLMJSON
+        from .fiction import CallableFictionBackend
+        backend = CallableFictionBackend(SubLLMJSON(application=args.subllm_app, function=args.subllm_fn))
+    engine = FictionEngine(analyzer, backend=backend)
+    if args.command == 'map':
+        return {'codes': EMOTION_CODES, 'semantics': 'categorical identifiers; intensity is a separate vector in [0,1]'}
+    if args.command == 'analyze':
+        return analyzer.analyze(args.text, history=load(args.history) if args.history else ()).to_dict()
+    if args.command == 'image':
+        return analyze_image(args.path, pixel_heuristics=not args.features_only).to_dict()
+    if args.command == 'evaluate':
+        return evaluate_annotations(load(args.annotations))
+    dialogue = Dialogue.from_dict(load(args.dialogue))
+    if args.command == 'replay':
+        return engine.replay(args.plan.read_text(encoding='utf-8'), dialogue).to_dict()
+    if args.command == 'timeline':
+        return engine.analyze_dialogue(dialogue, actor=args.actor, recipients=args.recipients)
+    proposal = engine.generate(
+        dialogue,
+        actor=args.actor,
+        recipients=args.recipients,
+        request=FictionRequest.from_dict(load(args.request)) if args.request else None,
+        instruction=args.instruction,
+        image=analyze_image(args.image) if args.image else None,
+        candidates=load(args.candidates) if args.candidates else None,
+    )
+    if args.dsl_out:
+        args.dsl_out.write_text(proposal.dsl + '\n', encoding='utf-8')
+    return proposal.to_dict()
+
+
+def main(argv=None):
+    args = _build_fiction_parser().parse_args(argv)
     try:
-        lexicon = EmotionLexicon(load(args.lexicon)) if getattr(args, 'lexicon', None) else None
-        analyzer = TextEmotionAnalyzer(lexicon)
-        backend = None
-        if getattr(args, 'subllm', False):
-            from .backends import SubLLMJSON
-            from .fiction import CallableFictionBackend
-            backend = CallableFictionBackend(SubLLMJSON(application=args.subllm_app, function=args.subllm_fn))
-        engine = FictionEngine(analyzer, backend=backend)
-        if args.command == 'map':
-            result = {'codes': EMOTION_CODES, 'semantics': 'categorical identifiers; intensity is a separate vector in [0,1]'}
-        elif args.command == 'analyze':
-            result = analyzer.analyze(args.text, history=load(args.history) if args.history else ()).to_dict()
-        elif args.command == 'image':
-            result = analyze_image(args.path, pixel_heuristics=not args.features_only).to_dict()
-        elif args.command == 'evaluate':
-            result = evaluate_annotations(load(args.annotations))
-        else:
-            dialogue = Dialogue.from_dict(load(args.dialogue))
-            if args.command == 'replay':
-                result = engine.replay(args.plan.read_text(encoding='utf-8'), dialogue).to_dict()
-            elif args.command == 'timeline':
-                result = engine.analyze_dialogue(dialogue, actor=args.actor, recipients=args.recipients)
-            else:
-                proposal = engine.generate(dialogue, actor=args.actor, recipients=args.recipients,
-                    request=FictionRequest.from_dict(load(args.request)) if args.request else None,
-                    instruction=args.instruction,
-                    image=analyze_image(args.image) if args.image else None,
-                    candidates=load(args.candidates) if args.candidates else None)
-                result = proposal.to_dict()
-                if args.dsl_out:
-                    args.dsl_out.write_text(proposal.dsl+'\n', encoding='utf-8')
-        encoded = json.dumps(result, ensure_ascii=False, indent=2, allow_nan=False)
-        if getattr(args, 'out', None):
-            args.out.write_text(encoded+'\n', encoding='utf-8')
-        else:
-            print(encoded)
-        return 0
+        return emit_cli_json(_execute_fiction_command(args), getattr(args, 'out', None))
     except (EDialogError, OSError, UnicodeError, ValueError) as exc:
         print(f'{type(exc).__name__}: {exc}', file=sys.stderr)
         return 1

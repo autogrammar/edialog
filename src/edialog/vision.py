@@ -10,7 +10,7 @@ import warnings
 
 from .affect import vector
 from .errors import BackendError, ValidationError
-from .models import keys, text, unit
+from .models import CallableBackendBase, keys, text, unit
 
 SCENE_WEIGHTS = {
     'threat': {'scared': .8}, 'loss': {'sad': .8}, 'conflict': {'angry': .7, 'scared': .2},
@@ -41,12 +41,9 @@ class ImageAffect:
         return asdict(self)
 
 
-class CallableVisionBackend:
+class CallableVisionBackend(CallableBackendBase):
     """User-supplied complete(dict)->dict. The callback receives re-encoded pixels."""
-    def __init__(self, complete):
-        if not callable(complete):
-            raise ValidationError('Vision complete must be callable')
-        self.complete = complete
+    _error_message = 'Vision complete must be callable'
 
     def describe(self, png_bytes, *, context=()):
         payload = {'task': 'describe_fiction_scene',

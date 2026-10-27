@@ -1,0 +1,31 @@
+{
+  "schema": "new-project.intent/v3",
+  "ticket": "ticket-001",
+  "summary": "Reconcile dockuri SSoT manifests, register standard dependencies, and deduplicate internal clones",
+  "workstream": "integration",
+  "classification": {
+    "kind": "SERVICE",
+    "priority": "P2",
+    "origin": "health"
+  },
+  "allowedPaths": [
+    "project/ticket-001/**",
+    "TODO.md",
+    "project/TICKETS.md",
+    ".governance/**",
+    ".reuse/**",
+    ".planfile/**",
+    "dockuri.json",
+    "dockuri.yaml",
+    "src/**",
+    "tests/**",
+    "uriprocess.json"
+  ],
+  "forbiddenPaths": [
+    "project/ticket-*/user-*.md"
+  ],
+  "stacks": [],
+  "dependsOn": [],
+  "conflictsWith": [],
+  "integrationTicket": null
+}

@@ -134,7 +134,10 @@
           ".governance/modularity.dsl",
           ".governance/priority.dsl",
           ".governance/standard-requirements.json",
-          ".governance/manifest.json"
+          ".governance/manifest.json",
+          ".governance/**",
+          ".reuse/**",
+          ".planfile/**"
         ]
       },
       "interfaces": {
