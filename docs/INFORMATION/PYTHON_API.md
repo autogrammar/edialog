@@ -9,7 +9,7 @@
   "owner": "edialog",
   "scope": "project",
   "updated": "2026-10-26",
-  "source_digest": "1d62c806549f71bc4a1ed3c9001e64a9b5613b7db3c369528d826d71278b7f26",
+  "source_digest": "58af1ea0ba5b57009e39050849a22eb9a95b5fddbf11c11fc79333b16015023f",
   "priority": "P2",
   "evidence": [
     "src/edialog/__init__.py",
