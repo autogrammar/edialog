@@ -45,6 +45,9 @@ def main(argv=None):
             p.add_argument('--candidates', type=Path, help='JSON array of alternative lines')
             p.add_argument('--lexicon', type=Path)
             p.add_argument('--dsl-out', type=Path)
+            p.add_argument('--subllm', action='store_true', help='Use Subactor SubLLM routing transport')
+            p.add_argument('--subllm-app', default='autogrammar-tillm', help='SubLLM application name')
+            p.add_argument('--subllm-fn', default='invoke', help='SubLLM function route')
     evaluate = sub.add_parser('evaluate')
     evaluate.add_argument('annotations', type=Path)
     evaluate.add_argument('--out', type=Path)
@@ -52,7 +55,12 @@ def main(argv=None):
     try:
         lexicon = EmotionLexicon(load(args.lexicon)) if getattr(args, 'lexicon', None) else None
         analyzer = TextEmotionAnalyzer(lexicon)
-        engine = FictionEngine(analyzer)
+        backend = None
+        if getattr(args, 'subllm', False):
+            from .backends import SubLLMJSON
+            from .fiction import CallableFictionBackend
+            backend = CallableFictionBackend(SubLLMJSON(application=args.subllm_app, function=args.subllm_fn))
+        engine = FictionEngine(analyzer, backend=backend)
         if args.command == 'map':
             result = {'codes': EMOTION_CODES, 'semantics': 'categorical identifiers; intensity is a separate vector in [0,1]'}
         elif args.command == 'analyze':
