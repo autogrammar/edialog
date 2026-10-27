@@ -21,7 +21,7 @@ from .pipeline import (
 )
 from .mcp import EDialogMCPServer, get_registry_manifest
 
-__version__ = '0.4.4'
+__version__ = '0.4.5'
 __all__ = ['DialogueEngine', 'Proposal', 'Dialogue', 'Participant', 'Goal', 'Request',
            'Turn', 'Reading', 'CallableJSONBackend', 'ControlledNL', 'EDialogError',
            'NeedsClarification', 'UnsupportedObjective', 'ValidationError', 'BackendError',
