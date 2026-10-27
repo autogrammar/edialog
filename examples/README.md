@@ -30,11 +30,19 @@ Runner wykonuje dziesięć przykładów bez obrazów lub jedenaście z `--images
 
 | Plik | Co pokazuje |
 |---|---|
+| [subllm_dialogue.py](subllm_dialogue.py) | Integracja z `subactor/subllm` (SubLLM routing, klucze i modele) |
+| [romance_street_scenarios.py](romance_street_scenarios.py) | Spotkanie uliczne: 20-letni chłopak vs 40-letni mężczyzna zagadujący 25-letnią kobietę |
+| [aloof_street_scenarios.py](aloof_street_scenarios.py) | Strategia obojętności, emocjonalnej niejednoznaczności i budowania napięcia (`suspense`) |
+| [four_turns_dialogues.py](four_turns_dialogues.py) | 4 pełne kolejki dialogowe z dynamiczną reakcją kobiety na chłodny dystans mężczyzny |
 | [llm_strategy.py](llm_strategy.py) | Ollama, fakty autorskie, relacje i konkretny brief strategii |
 | [ollama_fiction.py](ollama_fiction.py) | Swobodne NL i opcjonalny obraz |
 | [image_context.py](image_context.py) z `--model` | Model wizyjny zamiast samej analizy palety |
 
 ```bash
+python3 examples/subllm_dialogue.py
+python3 examples/romance_street_scenarios.py
+python3 examples/aloof_street_scenarios.py
+python3 examples/four_turns_dialogues.py
 python3 examples/llm_strategy.py --model TWOJ_MODEL --strategy suspense
 python3 examples/ollama_fiction.py --model TWOJ_MODEL
 python3 examples/image_context.py --image scena.png --model TWOJ_MODEL_WIZYJNY
