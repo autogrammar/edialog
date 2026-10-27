@@ -1,7 +1,7 @@
 {
   "$schema": "https://wellmanifest.org/schemas/dockuri-v1.json",
   "app": "edialog",
-  "version": "0.4.4",
+  "version": "0.4.5",
   "description": "Auditable natural-language dialogue planning, contextual affect scoring, and 6-stage transparent URI process pipeline.",
   "transport": {
     "type": "uds",
@@ -12,108 +12,171 @@
   },
   "procedures": {
     "__ping__": {
+      "uri": "proc://edialog/system/ping/v1",
+      "aliases": ["edialog://system/ping/v1"],
       "effect": "pure",
       "description": "System health and latency probe (DOCK-PNG-001).",
       "timeout_ms": 50,
+      "run": ["edialog-mcp", "uri", "proc://edialog/system/ping/v1"],
+      "inputSchema": { "type": "object" },
+      "outputSchema": { "type": "object" },
       "schema": {
         "input": { "type": "object" },
         "output": { "type": "object" }
       }
     },
     "nl.parse": {
+      "uri": "proc://edialog/nl/parse/v1",
+      "aliases": ["edialog://nl/parse/v1"],
       "effect": "pure",
       "description": "Step 1: Parse NL instruction, trust_level preset, and author_brief into FictionRequest and canonical Action URI.",
       "timeout_ms": 500,
+      "run": ["edialog-mcp", "uri", "proc://edialog/nl/parse/v1"],
+      "inputSchema": { "type": "object" },
+      "outputSchema": { "type": "object" },
       "schema": {
         "input": { "type": "object" },
         "output": { "type": "object" }
       }
     },
     "context.filter": {
+      "uri": "proc://edialog/context/filter/v1",
+      "aliases": ["edialog://context/filter/v1"],
       "effect": "pure",
       "description": "Step 2: Filter visible dialogue history and compute baseline reader_proxy and character_expression_proxies.",
       "timeout_ms": 500,
+      "run": ["edialog-mcp", "uri", "proc://edialog/context/filter/v1"],
+      "inputSchema": { "type": "object" },
+      "outputSchema": { "type": "object" },
       "schema": {
         "input": { "type": "object" },
         "output": { "type": "object" }
       }
     },
     "candidates.generate": {
+      "uri": "proc://edialog/candidates/generate/v1",
+      "aliases": ["edialog://candidates/generate/v1"],
       "effect": "idempotent",
       "description": "Step 3: Generate candidate dialogue lines from deterministic templates, SubLLM (subactor/subllm), or Ollama.",
       "timeout_ms": 15000,
+      "run": ["edialog-mcp", "uri", "proc://edialog/candidates/generate/v1"],
+      "inputSchema": { "type": "object" },
+      "outputSchema": { "type": "object" },
       "schema": {
         "input": { "type": "object" },
         "output": { "type": "object" }
       }
     },
     "affect.score": {
+      "uri": "proc://edialog/affect/score/v1",
+      "aliases": ["edialog://affect/score/v1"],
       "effect": "pure",
       "description": "Step 4: Score and rank candidate lines against target affect vector with contextual lexical rules and repetition penalty.",
       "timeout_ms": 500,
+      "run": ["edialog-mcp", "uri", "proc://edialog/affect/score/v1"],
+      "inputSchema": { "type": "object" },
+      "outputSchema": { "type": "object" },
       "schema": {
         "input": { "type": "object" },
         "output": { "type": "object" }
       }
     },
     "dsl.compile": {
+      "uri": "proc://edialog/dsl/compile/v1",
+      "aliases": ["edialog://dsl/compile/v1"],
       "effect": "pure",
       "description": "Step 5: Compile affect-fiction 0.3 DSL and verify deterministic replay().",
       "timeout_ms": 500,
+      "run": ["edialog-mcp", "uri", "proc://edialog/dsl/compile/v1"],
+      "inputSchema": { "type": "object" },
+      "outputSchema": { "type": "object" },
       "schema": {
         "input": { "type": "object" },
         "output": { "type": "object" }
       }
     },
     "report.emit": {
+      "uri": "proc://edialog/report/emit/v1",
+      "aliases": ["edialog://report/emit/v1"],
       "effect": "pure",
       "description": "Step 6: Emit CompositeExecutionReceipt, hash-chained event logs, and auditable execution report.",
       "timeout_ms": 500,
+      "run": ["edialog-mcp", "uri", "proc://edialog/report/emit/v1"],
+      "inputSchema": { "type": "object" },
+      "outputSchema": { "type": "object" },
       "schema": {
         "input": { "type": "object" },
         "output": { "type": "object" }
       }
     },
     "pipeline.run": {
+      "uri": "proc://edialog/pipeline/run/v1",
+      "aliases": [
+        "proc://edialog/fiction/generate/v1",
+        "edialog://pipeline/run/v1"
+      ],
       "effect": "idempotent",
       "description": "Run the complete 6-stage transparent edialog pipeline and return proposal, step traces, receipt, logs, and reuse snippets.",
       "timeout_ms": 15000,
+      "run": ["edialog-mcp", "uri", "proc://edialog/pipeline/run/v1"],
+      "inputSchema": { "type": "object" },
+      "outputSchema": { "type": "object" },
       "schema": {
         "input": { "type": "object" },
         "output": { "type": "object" }
       }
     },
     "run": {
+      "uri": "proc://edialog/run/instruction/v1",
+      "aliases": ["edialog://run/instruction/v1"],
       "effect": "idempotent",
       "description": "Generic instruction execution endpoint for edialog (DOCK-DISP-001).",
       "timeout_ms": 15000,
+      "run": ["edialog-mcp", "uri", "proc://edialog/run/instruction/v1"],
+      "inputSchema": { "type": "object" },
+      "outputSchema": { "type": "object" },
       "schema": {
         "input": { "type": "object" },
         "output": { "type": "object" }
       }
     },
     "scene.analyze": {
+      "uri": "proc://edialog/scene/analyze/v1",
+      "aliases": ["edialog://scene/analyze/v1"],
       "effect": "pure",
       "description": "Analyze emotional trajectory of an existing dialogue.",
       "timeout_ms": 500,
+      "run": ["edialog-mcp", "uri", "proc://edialog/scene/analyze/v1"],
+      "inputSchema": { "type": "object" },
+      "outputSchema": { "type": "object" },
       "schema": {
         "input": { "type": "object" },
         "output": { "type": "object" }
       }
     },
     "dsl.replay": {
+      "uri": "proc://edialog/dsl/replay/v1",
+      "aliases": ["edialog://dsl/replay/v1"],
       "effect": "pure",
       "description": "Replay an affect-fiction 0.3 DSL plan and optionally append the winning turn to the scene.",
       "timeout_ms": 500,
+      "run": ["edialog-mcp", "uri", "proc://edialog/dsl/replay/v1"],
+      "inputSchema": { "type": "object" },
+      "outputSchema": { "type": "object" },
       "schema": {
         "input": { "type": "object" },
         "output": { "type": "object" }
       }
     },
     "turn.analyze_and_respond": {
+      "uri": "proc://edialog/turn/analyze_and_respond/v1",
+      "aliases": ["edialog://turn/analyze_and_respond/v1"],
       "effect": "idempotent",
       "description": "Analyze input sentence emotional metrics, compile NL expectations, and generate response for person/group with parallel DSL/JSON/YAML state and ASCII diagram.",
       "timeout_ms": 15000,
+      "run": ["edialog-mcp", "uri", "proc://edialog/turn/analyze_and_respond/v1"],
+      "inputSchema": { "type": "object" },
+      "outputSchema": { "type": "object" },
       "schema": {
         "input": { "type": "object" },
         "output": { "type": "object" }

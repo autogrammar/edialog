@@ -9,7 +9,7 @@
   "owner": "edialog",
   "scope": "project",
   "updated": "2026-10-26",
-  "source_digest": "86c18b79f14d7d74dbdcab58dbe17b7722d42d8ab594a2cd4bd49c7efe7128eb",
+  "source_digest": "84dd6fa75de3c7c543a4f04e8cce8f9070608af0ac8df3809c02d86222a676c0",
   "priority": "P2",
   "evidence": [
     "src/edialog/vision.py",

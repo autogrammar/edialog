@@ -37,10 +37,15 @@ def test_registry_manifest_and_workflow_dag():
     reg = get_registry_manifest()
     assert reg['schema'] == 'wellmanifest.mcp/registry/v1'
     assert reg['app'] == 'edialog'
+    assert reg['revision'] == '0.4.5'
     uris = {op['uri'] for op in reg['operations']}
     assert 'proc://edialog/pipeline/run/v1' in uris
     assert 'proc://edialog/nl/parse/v1' in uris
     assert 'proc://edialog/affect/score/v1' in uris
+
+    strict_reg = get_registry_manifest(strict=True)
+    assert set(strict_reg.keys()) == {'schema', 'revision', 'expiresAt', 'operations'}
+    assert all(op['available'] is True and 'aliases' not in op for op in strict_reg['operations'])
 
     dag = build_workflow_dag()
     assert dag['$schema'] == 'https://wellmanifest.org/schemas/dockuri-pipeline-v1.json'

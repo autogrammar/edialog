@@ -22,26 +22,42 @@ from .pipeline import (
 )
 
 
-def get_registry_manifest() -> dict[str, Any]:
+def get_registry_manifest(*, strict: bool = False) -> dict[str, Any]:
     """Return the wellmanifest.mcp/registry/v1 manifest describing all edialog URI procedures."""
+    import hashlib
+    import re
+
     operations = []
     for canonical, meta in PROCESS_CATALOG.items():
-        operations.append({
-            'id': meta['id'],
+        raw_id = str(meta['id'])
+        slug_id = re.sub(r'[^a-z0-9_-]+', '_', raw_id.lower()).strip('_-')
+        digest = hashlib.sha256(f"{canonical}:{meta['description']}".encode('utf-8')).hexdigest()
+        raw_effect = str(meta['effect']).lower()
+        mcp_effect = 'mutating' if raw_effect in ('write', 'mutating') else ('read' if raw_effect in ('read', 'idempotent') else 'pure')
+        entry: dict[str, Any] = {
+            'id': slug_id if strict else raw_id,
             'uri': canonical,
-            'aliases': list(meta.get('aliases', ())),
             'description': meta['description'],
             'owner': meta['owner'],
-            'effect': meta['effect'],
+            'effect': mcp_effect,
+            'available': True,
+            'deploymentRevision': digest,
             'inputSchema': {'type': 'object'},
             'outputSchema': {'type': 'object'},
-        })
-    return {
+        }
+        if not strict:
+            entry['aliases'] = list(meta.get('aliases', ()))
+        operations.append(entry)
+    manifest: dict[str, Any] = {
         'schema': 'wellmanifest.mcp/registry/v1',
-        'version': '0.4.4',
-        'app': 'edialog',
+        'revision': '0.4.5',
+        'expiresAt': '2099-12-31T23:59:59Z',
         'operations': operations,
     }
+    if not strict:
+        manifest['version'] = '0.4.5'
+        manifest['app'] = 'edialog'
+    return manifest
 
 
 MCP_TOOLS: list[dict[str, Any]] = [
