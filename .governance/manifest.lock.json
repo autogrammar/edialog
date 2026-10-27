@@ -1,0 +1,20 @@
+{
+  "schema": "wellmanifest.manifest-lock/v1",
+  "standard": {
+    "id": "profile:baseline",
+    "version": "0.20.38"
+  },
+  "managedFiles": {
+    ".governance/docs.json": "c5eb701d7a0e9638d5b871a2d6fbe947ae676bc49e483e807b4b2cbada701c20",
+    ".governance/local-ci-publication.json": "1e02bd617d71d97b2baae497c4b32fc58080c9403eea928577ce709300b3895c",
+    ".governance/manifest.json": "08c1a810a82e87439b9a709a02ef4c0e43f18d836bd6fb1283b42ae768cce268",
+    ".governance/modularity.dsl": "c9e6b5f909b06e8ed7090bd148497da4c5bfc105f89360f9724566fdd1d4810a",
+    ".governance/priority.dsl": "2777bff2036cd5711d5f961185980644067ea504d20f411442842ca96244c40b",
+    ".governance/standard-packs.json": "649a3cf54a9f4248025114a25caa1565d4d09d5a091773b37483ca350cedff2a",
+    ".governance/standard-requirements.json": "5cb63ec5bdab2a43b2dfb71c6812cbadd16348d9fcc1bb431f12bedba6b41a54",
+    ".governance/ticket_activity.py": "c2672349d879d967634de3100377a6f0c45a116733a2edc52309d7a0577e7d7b",
+    ".governance/worktree_overlap_check.py": "a7d17aa36344cbf644437e5f5d3b9dc4d8a264863bae2e80198b147f21d4b84d",
+    ".governance/worktree_path_check.py": "286fb1801fa437c9a5643a04a81dd421234a3f5412815c2cbba79bf5adf38562",
+    ".governance/worktrees.schema.json": "6b57184758bdceda5cd5ea98889427af1a762dd0afe801ac8e1279d26ccb2cb8"
+  }
+}

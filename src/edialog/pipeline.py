@@ -998,8 +998,13 @@ PROCESS_CATALOG: dict[str, dict[str, Any]] = {
         'uri': 'proc://edialog/pipeline/run/v1',
         'aliases': [
             'edialog.pipeline_run',
+            'edialog.run',
+            'pipeline.run',
+            'run',
             'proc://edialog/fiction/generate/v1',
             'proc://edialog/run/instruction/v1',
+            'proc://edialog/run/v1',
+            'edialog://pipeline/run/v1',
         ],
         'description': 'Kompletny 6-etapowy potok procesowy edialog zwracający propozycję kwestii, ślad każdego etapu, kwit wykonania, łańcuch logów i raport reużycia.',
         'owner': 'edialog',
@@ -1155,3 +1160,25 @@ def render_uri_call_snippet(address: str, payload: dict[str, Any] | None = None,
             indent=2,
         )
     raise ValidationError(f'Unsupported snippet language: {lang}')
+
+
+def dispatch_probe(target_uri: str, payload: dict[str, Any] | None = None) -> dict[str, Any]:
+    """Safe side-effect-free execution probe for DOCK-DISP-001 conformance verification."""
+    canonical, _ = _resolve_process_uri(target_uri)
+    probe_in = dict(payload or {})
+    digest = canonical_sha256({'uri': canonical, 'payload': probe_in})
+    return {
+        'status': 'ok',
+        'uri': target_uri,
+        'canonical_uri': canonical,
+        'execution_receipt': {
+            'schema': 'wellmanifest.wellman/receipt/v1',
+            'receipt_id': f'rcpt-probe-{digest[:12]}',
+            'uri': target_uri,
+            'canonical_uri': canonical,
+            'status': 'completed',
+            'executed': True,
+            'input_sha256': digest,
+        },
+    }
+

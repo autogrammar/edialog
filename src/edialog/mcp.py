@@ -3,6 +3,9 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
+from pathlib import Path
+import socket
 import sys
 import time
 from typing import Any
@@ -383,6 +386,46 @@ class EDialogMCPServer:
                 'metrics': {'duration_us': duration_us},
             }
 
+    def serve_uds(self, socket_path: str | Path | None = None, *, max_requests: int | None = None) -> None:
+        """Listen on a Unix Domain Socket (DOCK-UDS-001) and process NDJSON IPC frames."""
+        if socket_path is None:
+            env_sock = os.environ.get('DOCKURI_SOCKET')
+            run_dir = os.environ.get('DOCKURI_RUN_DIR')
+            if env_sock:
+                sock_file = Path(env_sock).expanduser()
+            elif run_dir:
+                sock_file = Path(run_dir).expanduser() / 'edialog.sock'
+            else:
+                sock_file = Path.home() / '.dockuri' / 'run' / 'edialog.sock'
+        else:
+            sock_file = Path(socket_path).expanduser()
+
+        sock_file.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
+        if sock_file.exists():
+            sock_file.unlink()
+
+        srv = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+        srv.bind(str(sock_file))
+        os.chmod(sock_file, 0o600)
+        srv.listen(16)
+        handled = 0
+        try:
+            while max_requests is None or handled < max_requests:
+                conn, _ = srv.accept()
+                try:
+                    raw = conn.recv(65536)
+                    if raw:
+                        frame = json.loads(raw.decode('utf-8').strip())
+                        resp = self.handle_dockuri_frame(frame)
+                        conn.sendall((json.dumps(resp, ensure_ascii=False) + '\n').encode('utf-8'))
+                        handled += 1
+                finally:
+                    conn.close()
+        finally:
+            srv.close()
+            if sock_file.exists():
+                sock_file.unlink()
+
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
@@ -392,6 +435,9 @@ def main(argv: list[str] | None = None) -> int:
     sub = parser.add_subparsers(dest='command')
 
     sub.add_parser('serve', help='Uruchom serwer JSON-RPC 2.0 MCP na stdin/stdout.')
+    daemon_p = sub.add_parser('daemon', help='Uruchom demona gniazda UDS DockURI (DOCK-UDS-001).')
+    daemon_p.add_argument('--socket', default=None, help='Ścieżka do gniazda UDS (domyślnie ~/.dockuri/run/edialog.sock)')
+    daemon_p.add_argument('--max-requests', type=int, default=None, help='Opcjonalny limit żądań przed zamknięciem')
     sub.add_parser('registry', help='Wypisz manifest rejestru wellmanifest.mcp/registry/v1.')
     sub.add_parser('explain', help='Wypisz opis 6-etapowej architektury procesowej i wzorce reużycia.')
 
@@ -412,6 +458,9 @@ def main(argv: list[str] | None = None) -> int:
         raw = sys.stdin.read() if args.payload == '-' else args.payload
         out = uri(args.address, raw)
         print(json.dumps(out, ensure_ascii=False, indent=2))
+        return 0
+    if args.command == 'daemon':
+        server.serve_uds(args.socket, max_requests=args.max_requests)
         return 0
     if args.command == 'serve':
         for line in sys.stdin:

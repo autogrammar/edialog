@@ -9,12 +9,16 @@
   "owner": "edialog",
   "scope": "project",
   "updated": "2026-10-27",
-  "source_digest": "2f23943f0ba9f5c5c73de6b5f45f398973a52591ee5f1d84a40e93c7b37ab438",
+  "source_digest": "b0efc20fcab2658f4547bde8a613575c63cc4a5ddf7866de2de3c48ffde45b49",
   "priority": "P1",
   "evidence": [
     "src/edialog/pipeline.py",
     "src/edialog/mcp.py",
     "dockuri.json",
+    "dockuri.yaml",
+    "uriprocess.json",
+    "policies/edialog-trust-boundaries.policy",
+    "standard/edialog-pipeline.lifecycle",
     "examples/mcp_process_pipeline.py",
     "tests/test_mcp_pipeline.py"
   ]

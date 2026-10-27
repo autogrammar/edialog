@@ -6,6 +6,37 @@
 
 ### Docs
 - Update README.md
+- Update docs/ANALYSIS/MODEL_LIMITATIONS.md
+- Update docs/ANALYSIS/VALIDATION.md
+- Update docs/DECISION/DOCUMENTATION_PROFILE.md
+- Update docs/FEATURE/CONTEXTUAL_EMOTION_WEIGHTS.md
+- Update docs/FEATURE/DSL_REPLAY.md
+- Update docs/FEATURE/FICTION_DIALOGUES.md
+- Update docs/FEATURE/IMAGE_CONTEXT.md
+- Update docs/FEATURE/MCP_PROCESS_PIPELINE.md
+- Update docs/INFORMATION/CLI_COMMANDS.md
+- ... and 10 more files
+
+### Test
+- Update tests/test_mcp_pipeline.py
+
+### Other
+- Update .governance/manifest.lock.json
+- Update .governance/modularity.dsl
+- Update .governance/priority.dsl
+- Update .governance/standard-requirements.json
+- Update .governance/ticket_activity.py
+- Update .governance/worktree_overlap_check.py
+- Update .governance/worktree_path_check.py
+- Update .governance/worktrees.schema.json
+- Update dockuri.json
+- Update dockuri.yaml
+- ... and 3 more files
+
+## [0.4.5] - 2026-10-27
+
+### Docs
+- Update README.md
 
 ## [0.4.4] - 2026-10-27
 

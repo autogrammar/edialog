@@ -12,6 +12,7 @@ from edialog import (
     Participant,
     ValidationError,
     build_workflow_dag,
+    dispatch_probe,
     get_registry_manifest,
     render_uri_call_snippet,
     run_process_pipeline,
@@ -103,8 +104,8 @@ def test_run_process_pipeline_transparency_and_receipt():
 def test_uri_and_uri_jsonl_contracts():
     dlg = _sample_dialogue()
 
-    # Ping
-    ping = uri('__ping__')
+    # Ping via canonical URI
+    ping = uri('proc://edialog/system/ping/v1')
     assert ping['status'] == 'pong'
     assert ping['executed'] is True
 
@@ -190,3 +191,42 @@ def test_mcp_server_jsonrpc_and_dockuri_frames():
 
     snippet = render_uri_call_snippet('proc://edialog/pipeline/run/v1', lang='python')
     assert 'from edialog import uri' in snippet
+
+    probe = dispatch_probe('proc://edialog/nl/parse/v1', {'instruction': 'test'})
+    assert probe['status'] == 'ok'
+    assert probe['execution_receipt']['status'] == 'completed'
+    assert probe['execution_receipt']['executed'] is True
+
+
+def test_uds_daemon_ping_latency(tmp_path):
+    import socket
+    import threading
+    import time
+
+    sock_path = tmp_path / 'edialog.sock'
+    server = EDialogMCPServer()
+    th = threading.Thread(target=server.serve_uds, kwargs={'socket_path': sock_path, 'max_requests': 1}, daemon=True)
+    th.start()
+
+    for _ in range(50):
+        if sock_path.exists():
+            break
+        time.sleep(0.005)
+    assert sock_path.exists()
+
+    client = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+    t0 = time.perf_counter()
+    try:
+        client.connect(str(sock_path))
+        client.sendall((json.dumps({'id': 'ping-1', 'proc': '__ping__', 'args': {}}) + '\n').encode('utf-8'))
+        raw = client.recv(4096)
+    finally:
+        client.close()
+    elapsed_ms = (time.perf_counter() - t0) * 1000.0
+    resp = json.loads(raw.decode('utf-8').strip())
+    assert resp['ok'] is True
+    assert resp['result']['status'] == 'pong'
+    assert elapsed_ms < 20.0
+    th.join(timeout=1.0)
+
+

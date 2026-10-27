@@ -1,0 +1,74 @@
+version: dockuri/proc-v2
+app: edialog
+processes:
+  - uri: proc://edialog/system/ping/v1
+    aliases:
+      - edialog://system/ping/v1
+    effect: pure
+    description: Sonda zdrowia demona/modułu procesowego edialog (DOCK-PNG-001).
+    run: ["edialog-mcp", "uri", "proc://edialog/system/ping/v1"]
+
+  - uri: proc://edialog/nl/parse/v1
+    aliases:
+      - edialog://nl/parse/v1
+    effect: pure
+    description: "Etap 1: Parsuje instrukcję NL, poziom zaufania (trust_level) i brief autora do kontraktu FictionRequest oraz Action URI."
+    run: ["edialog-mcp", "uri", "proc://edialog/nl/parse/v1"]
+
+  - uri: proc://edialog/context/filter/v1
+    aliases:
+      - edialog://context/filter/v1
+    effect: pure
+    description: "Etap 2: Filtruje widoczny kontekst rozmowy dla aktora i adresatów oraz wylicza bazowe wektory reader_proxy."
+    run: ["edialog-mcp", "uri", "proc://edialog/context/filter/v1"]
+
+  - uri: proc://edialog/candidates/generate/v1
+    aliases:
+      - edialog://candidates/generate/v1
+    effect: idempotent
+    description: "Etap 3: Generuje pulę kandydatów wypowiedzi z szablonów deterministycznych, SubLLM (subactor/subllm) lub Ollama."
+    run: ["edialog-mcp", "uri", "proc://edialog/candidates/generate/v1"]
+
+  - uri: proc://edialog/affect/score/v1
+    aliases:
+      - edialog://affect/score/v1
+    effect: pure
+    description: "Etap 4: Ocenia afekt każdego kandydata w kontekście historii i obrazu oraz szereguje kandydatów według rank_loss."
+    run: ["edialog-mcp", "uri", "proc://edialog/affect/score/v1"]
+
+  - uri: proc://edialog/dsl/compile/v1
+    aliases:
+      - edialog://dsl/compile/v1
+    effect: pure
+    description: "Etap 5: Kompiluje reprodukowalny dokument DSL affect-fiction 0.3 i weryfikuje deterministyczny replay()."
+    run: ["edialog-mcp", "uri", "proc://edialog/dsl/compile/v1"]
+
+  - uri: proc://edialog/report/emit/v1
+    aliases:
+      - edialog://report/emit/v1
+    effect: pure
+    description: "Etap 6: Emituje CompositeExecutionReceipt, łańcuch logów i raport audytowy procesu."
+    run: ["edialog-mcp", "uri", "proc://edialog/report/emit/v1"]
+
+  - uri: proc://edialog/pipeline/run/v1
+    aliases:
+      - proc://edialog/fiction/generate/v1
+      - proc://edialog/run/instruction/v1
+      - edialog://pipeline/run/v1
+    effect: idempotent
+    description: "Kompletny 6-etapowy potok procesowy edialog zwracający propozycję kwestii, ślad każdego etapu, kwit wykonania, łańcuch logów i raport reużycia."
+    run: ["edialog-mcp", "uri", "proc://edialog/pipeline/run/v1"]
+
+  - uri: proc://edialog/scene/analyze/v1
+    aliases:
+      - edialog://scene/analyze/v1
+    effect: pure
+    description: "Analizuje trajektorię emocjonalną istniejącego dialogu (timeline, reader_proxy, character_expression_proxies)."
+    run: ["edialog-mcp", "uri", "proc://edialog/scene/analyze/v1"]
+
+  - uri: proc://edialog/dsl/replay/v1
+    aliases:
+      - edialog://dsl/replay/v1
+    effect: pure
+    description: "Odtwarza zapisany plan DSL affect-fiction 0.3 na dialogu i opcjonalnie dopisuje wybraną kwestię (continue_scene)."
+    run: ["edialog-mcp", "uri", "proc://edialog/dsl/replay/v1"]
