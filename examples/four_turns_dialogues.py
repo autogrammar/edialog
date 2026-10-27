@@ -61,8 +61,8 @@ if __name__ == "__main__":
         title="SCENARIUSZ 2: 40-letni Tomasz i 25-letnia Klaudia (Przejście dla pieszych w deszczu)",
         male_id="tomasz",
         male_name="Tomasz (40 l.)",
-        male_style="Mężczyzna 40 lat. Styl: opanowany, chłodny dżentelmen, magnetyczny dystans, tajemniczość",
+        male_style="Mężczyzna 40 lat. Styl: opanowany, chłodny dżentelmen, magnetyczny dystans, tajemniczość, brak desperacji",
         female_id="klaudia",
         female_name="Klaudia (25 l.)",
-        starting_situation="Klaudia stoi na światłach na rogu ulicy, marznąc w ulewnym deszczu. Obok stoi Tomasz z dużym czarnym parasolem, patrząc przed siebie."
+        starting_situation="Klaudia stoi na światłach na rogu ulicy, marznąc w ulewnym deszczu. Obok stoi Tomasz z dużym czarnym parasolem, patrząc przed siebie obojętnie."
     )
