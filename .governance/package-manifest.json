@@ -2,6 +2,30 @@
   "schema": "new-project.package-manifest/v1",
   "files": [
     {
+      "source": "scripts/bootstrap_packaging_scope.py",
+      "target": ".governance/bootstrap_packaging_scope.py",
+      "strategy": "managed",
+      "executable": true
+    },
+    {
+      "source": "scripts/legacy_terminal_retirement.py",
+      "target": ".governance/legacy_terminal_retirement.py",
+      "strategy": "managed",
+      "executable": true
+    },
+    {
+      "source": "scripts/terminal_lease_release.py",
+      "target": ".governance/terminal_lease_release.py",
+      "strategy": "managed",
+      "executable": true
+    },
+    {
+      "source": "scripts/owner_handoff.py",
+      "target": ".governance/owner_handoff.py",
+      "strategy": "managed",
+      "executable": true
+    },
+    {
       "source": "scripts/snapshot_allocation.py",
       "target": ".governance/snapshot_allocation.py",
       "strategy": "managed",
@@ -296,6 +320,18 @@
       "executable": true
     },
     {
+      "source": "scripts/idle_takeover.py",
+      "target": ".governance/idle_takeover.py",
+      "strategy": "managed",
+      "executable": true
+    },
+    {
+      "source": "error/GOV-IDLE-TAKEOVER.md",
+      "target": ".governance/error/GOV-IDLE-TAKEOVER.md",
+      "strategy": "managed",
+      "executable": false
+    },
+    {
       "source": "error/GOV-INTENT.md",
       "target": ".governance/error/GOV-INTENT.md",
       "strategy": "managed",
@@ -318,6 +354,18 @@
       "target": ".governance/work_continuity.py",
       "strategy": "managed",
       "executable": true
+    },
+    {
+      "source": "scripts/continuity_namespace.py",
+      "target": ".governance/continuity_namespace.py",
+      "strategy": "managed",
+      "executable": false
+    },
+    {
+      "source": "docs/information/continuity-namespaces.md",
+      "target": ".governance/docs/information/continuity-namespaces.md",
+      "strategy": "managed",
+      "executable": false
     },
     {
       "source": "scripts/ticket_input.py",
@@ -754,6 +802,12 @@
     {
       "source": "scripts/seed_baseline.py",
       "target": ".governance/seed_baseline.py",
+      "strategy": "managed",
+      "executable": true
+    },
+    {
+      "source": "scripts/controller_store_compaction.py",
+      "target": ".governance/controller_store_compaction.py",
       "strategy": "managed",
       "executable": true
     }

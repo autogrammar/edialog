@@ -95,7 +95,7 @@ def stage(root):
     return result
 
 
-def context(root, request_path, actor, session):
+def context(root, request_path, actor, session, *, allowed_untracked=()):
     require(root.is_absolute() and root == root.resolve(), 'canonical_root_required')
     require(not any(p.is_symlink() for p in (root, *root.parents)), 'symlink_path')
     require(request_path == request_path.resolve() and root not in request_path.parents, 'external_request_required')
@@ -141,7 +141,12 @@ def context(root, request_path, actor, session):
     require(set(METADATA) <= set(initial), 'seed_prerequisites_required')
     require(load(root / '.governance/required-checks.json')['repository'] == request['repositoryRef'],
             'check_repository_binding')
-    require(not git(root, 'ls-files', '--others', '-z').stdout, 'untracked_path')
+    # Validate carrier paths before Git classifies a symlinked parent as an
+    # unrelated untracked path, and before any ticket contents are read.
+    for name in allowed_untracked:
+        regular(root / name)
+    untracked = set(git(root, 'ls-files', '--others', '-z').stdout.decode().split('\0')) - {''}
+    require(untracked <= set(allowed_untracked), 'untracked_path')
     return request
 
 
@@ -158,29 +163,48 @@ def preflight(root, request_path, actor, session):
 
 
 def prepare(root, request_path, actor, session, ticket):
-    # The managed allocator has reserved this exact ID under its clone lock.
+    # Validate without changing files or the index. Only this allocator's two
+    # ticket carriers may be untracked; other context callers stay strict.
     require(re.fullmatch('ticket-[0-9]{3,}', ticket), 'native_ticket_required')
+    carriers = [f'project/{ticket}/README.md', f'project/{ticket}/intent.json']
+    request = context(root, request_path, actor, session, allowed_untracked=carriers)
+    readme, intent_path = (root / name for name in carriers)
+
+    # The managed allocator has reserved this exact ID under its clone lock.
     counter = root / '.git/new-project-ticket-high-water'
+    regular(counter)
     require(counter.read_text().strip() == str(int(ticket.removeprefix('ticket-'))), 'native_reservation_required')
     require((root / '.git/new-project-ticket-allocation.lock').is_dir(), 'allocator_lock_required')
-    readme = root / f'project/{ticket}/README.md'
+    reservation = root / '.git/new-project-seed-reservation.json'
+    require(not reservation.exists() and not reservation.is_symlink(), 'seed_already_reserved')
+    intent = load(intent_path)
+    require(intent['ticket'] == ticket and 'delivery' not in intent, 'unborn_ticket_binding')
+    seed_files = request['files']
+    initial = stage(root)
+    require(set(initial) == set(seed_files), 'exact_seed_stage_required')
+    require(all(initial[name] == sha for name, sha in seed_files.items()
+                if name != 'project/TICKETS.md'), 'seed_content_drift')
     text = readme.read_text()
     require('SESSION_EXECUTION_AUTHORIZATION' not in text, 'unexpected_ticket_content')
     text += '\nSESSION_EXECUTION_AUTHORIZATION: explicit new-repository seed request; no product implementation before the real baseline.\n'
+    carrier_bytes = [text.encode(), intent_path.read_bytes()]
+    require(not any(SECRET.search(raw) for raw in carrier_bytes), 'secret_material')
+    require(len(initial) + len(carriers) <= 512
+            and sum((root / name).stat().st_size for name in initial)
+            + sum(map(len, carrier_bytes)) <= 16 * 1024 * 1024, 'seed_size_limit')
+    request_sha256 = digest(request_path.read_bytes())
+
+    # Mutate only after request, paths, reservation, intent and seed validation.
     readme.write_text(text)
-    seed_files = load(request_path)['files']
-    names = [*seed_files, f'project/{ticket}/README.md', f'project/{ticket}/intent.json']
+    names = [*seed_files, *carriers]
     git(root, 'add', '--', *names)
-    request = context(root, request_path, actor, session)
     actual = stage(root)
     require(set(actual) == set(names), 'seed_stage_expansion')
     require(all(actual[name] == sha for name, sha in seed_files.items()
                 if name != 'project/TICKETS.md'), 'seed_content_drift')
-    intent = load(root / f'project/{ticket}/intent.json')
-    require(intent['ticket'] == ticket and 'delivery' not in intent, 'unborn_ticket_binding')
-    record = {'requestSha256': digest(request_path.read_bytes()), 'ticket': ticket,
+    record = {'requestSha256': request_sha256, 'ticket': ticket,
               'files': actual, 'actor': actor, 'session': session}
-    with (root / '.git/new-project-seed-reservation.json').open('x') as stream:
+    with reservation.open('x') as stream:
         json.dump(record, stream, sort_keys=True)
     return record
 

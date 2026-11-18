@@ -3,10 +3,14 @@
 from __future__ import annotations
 
 import argparse
+import codecs
 from contextlib import ExitStack
 from datetime import datetime, timezone
 import hashlib
+import importlib.util
+import io
 import json
+import math
 import os
 from pathlib import Path
 import re
@@ -269,6 +273,90 @@ def bootstrap_historical_refs(root, head):
     return refs
 
 
+WELLMAN_SCAFFOLD_PROFILES = frozenset({
+    "wellmanifest/new-project",
+    "profile:baseline",
+    "profile:domain-pack",
+    "profile:runtime-service",
+    "profile:agent-executor",
+    "profile:deployment",
+    "profile:embedded-fleet",
+    "profile:full",
+})
+WELLMAN_SCAFFOLD_VERSION_RE = re.compile(
+    r"\A(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)"
+    r"(?:-(?:0|[1-9][0-9]*|[0-9]*[A-Za-z-][0-9A-Za-z-]*)"
+    r"(?:\.(?:0|[1-9][0-9]*|[0-9]*[A-Za-z-][0-9A-Za-z-]*))*)?"
+    r"(?:\+[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?\Z"
+)
+
+
+def bootstrap_scaffold_at_head(root, head):
+    """Verify committed legacy provenance, or prove governance was absent.
+
+    The published installer also accepts an exact untracked scaffold. Its
+    receipt still binds the original clone/HEAD and every installed byte;
+    absence in Git is not a reason to invent a preliminary scaffold commit.
+    A checked tree read distinguishes absence from an unreadable Git object.
+    """
+    paths = set(git(root, "ls-tree", "-r", "--name-only", "-z", head,
+                    "--", ".governance").split("\0")) - {""}
+    if ".governance/manifest.json" not in paths:
+        if paths:
+            raise ObservationError("Untracked scaffold cannot replace committed governance")
+        return
+    original = json.loads(git(root, "show", f"{head}:.governance/manifest.json"))
+    standard = original.get("standard", {}) if isinstance(original, dict) else {}
+    if (not isinstance(original, dict) or set(original) != {"schema", "standard"}
+            or original.get("schema") != "wellmanifest.manifest/v1"
+            or not isinstance(standard, dict) or set(standard) != {"id", "version"}
+            or standard.get("id") not in WELLMAN_SCAFFOLD_PROFILES
+            or not isinstance(standard.get("version"), str)
+            or not WELLMAN_SCAFFOLD_VERSION_RE.fullmatch(standard["version"])):
+        raise ObservationError("Bootstrap requires an exact legacy scaffold")
+
+
+def bootstrap_preserved_worktrees(root, head):
+    """Observe canonical integrated checkouts; never retire or take over them.
+
+    The existing historical-ref lease check remains independently required.
+    Callers compare repeated observations; cleanliness is not writer authority.
+    """
+    inventory = worktrees(root)
+    if Path(inventory[0]["worktree"]) != root:
+        raise ObservationError("Bootstrap requires the registered primary checkout")
+    common = git(root, "rev-parse", "--path-format=absolute", "--git-common-dir").strip()
+    observed = []
+    for item in inventory[1:]:
+        branch = item.get("branch", "")
+        match = re.fullmatch(r"refs/heads/ticket/([0-9]{3,})-([a-z0-9]+(?:-[a-z0-9]+)*)", branch)
+        path = Path(item["worktree"])
+        if (not match or set(item) != {"worktree", "HEAD", "branch"}
+                or path != root / ".worktrees" / f"ticket-{match[1]}--{match[2]}"
+                or any(p.is_symlink() for p in (path, *path.parents))
+                or not path.is_dir()):
+            raise ObservationError("Bootstrap worktree is not a preserved canonical checkout")
+        sha = git(path, "rev-parse", "HEAD").strip()
+        if (sha != item["HEAD"] or sha == head
+                or git(root, "merge-base", head, sha).strip() != sha
+                or git(root, "rev-parse", branch).strip() != sha
+                or git(path, "symbolic-ref", "HEAD").strip() != branch
+                or Path(git(path, "rev-parse", "--show-toplevel").strip()) != path
+                or git(path, "rev-parse", "--path-format=absolute", "--git-common-dir").strip() != common):
+            raise ObservationError("Bootstrap worktree bindings are not strictly integrated")
+        # Non-default index flags and ignored submodules must not hide changes.
+        flags = git(path, "ls-files", "-v", "-z").split("\0")
+        if (any(field and field[0] != "H" for field in flags)
+                or git(path, "status", "--porcelain=v1", "--untracked-files=all",
+                       "--ignore-submodules=none")):
+            raise ObservationError("Bootstrap preserved worktree is not observably clean")
+        _, checksum, dirty = dirty_observation(path)
+        if dirty:
+            raise ObservationError("Bootstrap preserved worktree changed during observation")
+        observed.append({"registration": item, "dirtyDigest": checksum})
+    return {"inventory": inventory, "preserved": observed}
+
+
 def bootstrap_owned_paths(root, manifest, expected_digest):
     """A first allocator may acknowledge only exact installer-owned bytes.
 
@@ -295,20 +383,14 @@ def bootstrap_owned_paths(root, manifest, expected_digest):
             if git(root, "cat-file", "-e", f"{head}:.governance/{name}", optional=True) is not None:
                 raise ObservationError("Fresh bootstrap cannot replace committed governance")
     elif kind == "legacy-scaffold":
-        original = json.loads(git(root, "show", f"{head}:.governance/manifest.json"))
-        standard = original.get("standard", {})
-        if (set(original) != {"schema", "standard"}
-                or original.get("schema") != "wellmanifest.manifest/v1"
-                or set(standard) != {"id", "version"}
-                or standard.get("id") != "profile:baseline"
-                or not re.fullmatch(r"[0-9]+\.[0-9]+\.[0-9]+", str(standard.get("version", "")))):
-            raise ObservationError("Bootstrap requires a committed exact legacy scaffold")
+        bootstrap_scaffold_at_head(root, head)
     else:
         raise ObservationError("Unknown bootstrap kind")
-    if (len(worktrees(root)) != 1
-            or (Path(common) / "new-project-ticket-high-water").exists()):
+    high_water = Path(common) / "new-project-ticket-high-water"
+    if high_water.exists() or high_water.is_symlink():
         raise ObservationError("Bootstrap acknowledgement is first-allocation only")
     historical_refs = bootstrap_historical_refs(root, head)
+    preserved_worktrees = bootstrap_preserved_worktrees(root, head)
     if kind == "fresh":
         unchanged_committed_legacy_carriers(root, head)
     elif list((root / "project").glob("ticket-*")):
@@ -328,20 +410,27 @@ def bootstrap_owned_paths(root, manifest, expected_digest):
         raise ObservationError("Bootstrap receipt includes paths outside adoption")
     if not set(lock["managedFiles"]).issubset(files):
         raise ObservationError("Bootstrap receipt omits managed files")
-    for rel, checksum in files.items():
-        patterns([rel])
-        path = root / rel
-        if (any(p.is_symlink() for p in (path, *path.parents)) or not path.is_file()
-                or not re.fullmatch(r"[0-9a-f]{64}", str(checksum))
-                or hashlib.sha256(path.read_bytes()).hexdigest() != checksum
-                or (rel in lock["managedFiles"] and lock["managedFiles"][rel] != checksum)):
-            raise ObservationError("Bootstrap payload changed or is not installed")
+    def verify_bootstrap_files():
+        for rel, checksum in files.items():
+            patterns([rel])
+            path = root / rel
+            if (any(p.is_symlink() for p in (path, *path.parents)) or not path.is_file()
+                    or not re.fullmatch(r"[0-9a-f]{64}", str(checksum))
+                    or hashlib.sha256(path.read_bytes()).hexdigest() != checksum
+                    or (rel in lock["managedFiles"] and lock["managedFiles"][rel] != checksum)):
+                raise ObservationError("Bootstrap payload changed or is not installed")
+
+    verify_bootstrap_files()
     if (git(root, "rev-parse", "HEAD").strip() != head
             or bootstrap_historical_refs(root, head) != historical_refs
-            or len(worktrees(root)) != 1
-            or (Path(common) / "new-project-ticket-high-water").exists()):
+            or bootstrap_preserved_worktrees(root, head) != preserved_worktrees
+            or high_water.exists() or high_water.is_symlink()):
         raise ObservationError("Bootstrap allocation state changed during observation")
-    return set(dirty).intersection(files)
+    _, final_digest, final_dirty = dirty_observation(root)
+    if final_digest != expected_digest or final_dirty != dirty:
+        raise ObservationError("Bootstrap changed during admission")
+    verify_bootstrap_files()
+    return set(final_dirty).intersection(files)
 
 
 def bootstrap_seed_paths(root, manifest):
@@ -428,7 +517,40 @@ def dirty_observation(root):
                 hashes[rel] = checksum.hexdigest()
         else:
             hashes[rel] = "absent-or-submodule"
-    return material(sorted(paths)), digest({"status": status, "files": hashes}), sorted(paths)
+    index = git(root, "ls-files", "--stage", "-z")
+    return material(sorted(paths)), digest({"status": status, "files": hashes, "index": index}), sorted(paths)
+
+
+def outstanding_detached_paths(root, paths, target):
+    """Subtract exact integrated bytes, without modifying or releasing the checkout."""
+    trees = {}
+    for item in git(root, "ls-tree", "-r", "--full-tree", "-z", target).split("\0"):
+        if item:
+            metadata, name = item.split("\t", 1)
+            mode, kind, oid = metadata.split()
+            if kind == "blob" and mode in {"100644", "100755"}:
+                trees[name] = (mode, oid)
+    indexes = {}
+    for item in git(root, "ls-files", "--stage", "-z").split("\0"):
+        if item:
+            metadata, name = item.split("\t", 1)
+            mode, oid, stage = metadata.split()
+            indexes.setdefault(name, []).append((mode, oid, stage))
+    outstanding = []
+    for name in paths:
+        path = root / name
+        accepted = trees.get(name)
+        if (not accepted or indexes.get(name) != [(*accepted, "0")]
+                or any(p.is_symlink() for p in (path, *path.parents)) or not path.is_file()):
+            outstanding.append(name)
+            continue
+        mode = "100755" if path.stat().st_mode & 0o100 else "100644"
+        # Raw hashing deliberately ignores clean/textconv filters and index
+        # flags: assume-unchanged cannot conceal different filesystem bytes.
+        oid = git(root, "hash-object", "--no-filters", "--", name).strip()
+        if (mode, oid) != accepted:
+            outstanding.append(name)
+    return outstanding
 
 
 def dirty_modified(root, paths):
@@ -547,7 +669,7 @@ def publication_observation(root, entries, target):
             observation["status"] = "changed"
             return unknown()
         return observation
-    except (ObservationError, ValueError):
+    except (ObservationError, ValueError, subprocess.SubprocessError):
         observation["status"] = "unavailable"
         return unknown()
 
@@ -555,28 +677,532 @@ def publication_observation(root, entries, target):
 CONTROLLER_STORE_SCHEMA = "subactor.repository-change-lease-store/v1"
 FREE_LEASE_PHASES = {"closed", "cancelled", "released"}
 REPOSITORY_REF = re.compile(r"[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+")
+MAX_CONTROLLER_STATE_BYTES = 128 * 1024 * 1024
+_CONTROLLER_CHUNK_BYTES = 65536
+_MAX_JSON_DEPTH = 64
+_MAX_JSON_STRING_CHARS = 1024 * 1024
+_MAX_CAPTURED_ITEMS = 4096
+_MAX_OBJECT_KEYS = 250000
+_JSON_WS_RE = re.compile(r"[ \t\r\n]+")
+_JSON_NUMBER_RE = re.compile(r"-?(?:0|[1-9][0-9]*)(?:\.[0-9]+)?(?:[eE][+-]?[0-9]+)?")
 RESOURCE_ACTIONS = {
     "AVAILABLE": "Acquire the editing lease from the controller, then re-run work-start with --ticket before any write.",
     "HELD_BY_TICKET": "Continue only under the existing lease after verifying its owner, fencing token and expiry.",
-    "HELD_BY_OTHER": "Wait for the holder's release or a protected handoff; do not prepare an expiring admission now.",
     "HELD_EXPIRED": "The expired holder still blocks the resource until the controller releases it or records a "
                     "protected takeover; expiry alone never authorizes takeover.",
+    "HELD_BY_OTHER": "Wait for the holder's release or a protected handoff; do not prepare an expiring admission now.",
     "UNAVAILABLE": "Restore controller access; do not infer availability from disjoint paths or retry an admission.",
 }
 
 
-def _controller_bytes(store):
+class _ControllerStateChanged(ObservationError):
+    pass
+
+
+def _open_controller_state(store):
     path = Path(os.path.abspath(store)) / "state.json"
     if any(p.is_symlink() for p in (path, *path.parents)):
         raise ObservationError("Symlinked controller state")
     descriptor = os.open(path, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK)
-    with os.fdopen(descriptor, "rb") as stream:
-        if not stat.S_ISREG(os.fstat(stream.fileno()).st_mode):
-            raise ObservationError("Controller state must be a regular file")
-        raw = stream.read(4 * 1024 * 1024 + 1)
-    if len(raw) > 4 * 1024 * 1024:
-        raise ObservationError("Controller state too large")
-    return raw
+    stream = os.fdopen(descriptor, "rb")
+    if not stat.S_ISREG(os.fstat(stream.fileno()).st_mode):
+        stream.close()
+        raise ObservationError("Controller state must be a regular file")
+    return stream
+
+
+def _controller_bytes(store, *, max_bytes=MAX_CONTROLLER_STATE_BYTES):
+    with _open_controller_state(store) as stream:
+        chunks = []
+        total = 0
+        while True:
+            chunk = stream.read(_CONTROLLER_CHUNK_BYTES)
+            if not chunk:
+                break
+            total += len(chunk)
+            if total > max_bytes:
+                raise ObservationError("Controller state too large")
+            chunks.append(chunk)
+    return b"".join(chunks)
+
+
+_DEFAULT_CONTROLLER_BYTES = _controller_bytes
+
+
+def _stream_controller_digest(store, *, max_bytes=MAX_CONTROLLER_STATE_BYTES):
+    with _open_controller_state(store) as stream:
+        hasher = hashlib.sha256()
+        total = 0
+        while True:
+            chunk = stream.read(_CONTROLLER_CHUNK_BYTES)
+            if not chunk:
+                break
+            total += len(chunk)
+            if total > max_bytes:
+                raise ObservationError("Controller state too large")
+            hasher.update(chunk)
+    return hasher.hexdigest()
+
+
+class _StreamJsonScanner:
+    """Bounded RFC 8259 streaming reader with strict UTF-8 and duplicate-key rejection."""
+
+    def __init__(self, stream, *, max_bytes=MAX_CONTROLLER_STATE_BYTES):
+        self.stream = stream
+        self.max_bytes = max_bytes
+        self.decoder = codecs.getincrementaldecoder("utf-8")("strict")
+        self.hasher = hashlib.sha256()
+        self.total_bytes = 0
+        self.buf = ""
+        self.pos = 0
+        self.eof = False
+
+    def _fill(self):
+        if self.eof:
+            return False
+        while True:
+            chunk = self.stream.read(_CONTROLLER_CHUNK_BYTES)
+            if not chunk:
+                tail = self.decoder.decode(b"", final=True)
+                self.eof = True
+                if self.pos >= _CONTROLLER_CHUNK_BYTES:
+                    self.buf = self.buf[self.pos:] + tail
+                    self.pos = 0
+                else:
+                    self.buf += tail
+                return bool(tail)
+            self.total_bytes += len(chunk)
+            if self.total_bytes > self.max_bytes:
+                raise ObservationError("Controller state too large")
+            self.hasher.update(chunk)
+            decoded = self.decoder.decode(chunk, final=False)
+            if self.pos >= _CONTROLLER_CHUNK_BYTES:
+                self.buf = self.buf[self.pos:] + decoded
+                self.pos = 0
+            else:
+                self.buf += decoded
+            if decoded:
+                return True
+
+    def skip_ws(self):
+        while True:
+            match = _JSON_WS_RE.match(self.buf, self.pos)
+            if match is not None:
+                self.pos = match.end()
+            if self.pos < len(self.buf) or self.eof:
+                return
+            self._fill()
+
+    def peek(self):
+        self.skip_ws()
+        return self.buf[self.pos] if self.pos < len(self.buf) else ""
+
+    def read_string(self):
+        while True:
+            try:
+                value, end = json.decoder.scanstring(self.buf, self.pos + 1, True)
+                if len(value) > _MAX_JSON_STRING_CHARS:
+                    raise ValueError("JSON string exceeds controller bound")
+                self.pos = end
+                return value
+            except json.JSONDecodeError:
+                if self.eof or (len(self.buf) - self.pos) > (_MAX_JSON_STRING_CHARS * 6):
+                    raise ValueError("Invalid JSON string") from None
+                self._fill()
+
+    def read_number(self, *, capture=False):
+        while not self.eof and (len(self.buf) - self.pos) < 128:
+            self._fill()
+        while True:
+            match = _JSON_NUMBER_RE.match(self.buf, self.pos)
+            if match is None:
+                raise ValueError("Invalid JSON number")
+            if match.end() == len(self.buf) and not self.eof:
+                if (len(self.buf) - self.pos) > 1024:
+                    raise ValueError("Oversized JSON number")
+                self._fill()
+                continue
+            break
+        token = match.group(0)
+        self.pos = match.end()
+        if any(ch in token for ch in ".eE"):
+            number = float(token)
+            if not math.isfinite(number):
+                raise ValueError("Non-finite JSON number")
+            return number if capture else None
+        if capture:
+            if len(token) > 64:
+                raise ValueError("Integer exceeds controller bound")
+            return int(token)
+        return None
+
+    def read_literal(self):
+        while not self.eof and (len(self.buf) - self.pos) < 5:
+            self._fill()
+        for literal, value in (("true", True), ("false", False), ("null", None)):
+            if self.buf.startswith(literal, self.pos):
+                self.pos += len(literal)
+                return value
+        raise ValueError("Invalid JSON literal")
+
+    def skip_value(self, initial_depth):
+        ch = self.peek()
+        if not ch:
+            raise ValueError("Unexpected EOF")
+        if ch == '"':
+            self.read_string()
+            return
+        if ch in "-0123456789":
+            self.read_number(capture=False)
+            return
+        if ch in "tfn":
+            self.read_literal()
+            return
+        if ch not in "{[":
+            raise ValueError("Invalid JSON token")
+        if initial_depth + 1 > _MAX_JSON_DEPTH:
+            raise ValueError("JSON nesting too deep")
+        self.pos += 1
+        stack = [["obj", set(), True] if ch == "{" else ["arr", None, True]]
+        while stack:
+            kind, seen, first = stack[-1]
+            cur = self.peek()
+            if not cur:
+                raise ValueError("Unterminated JSON container")
+            if kind == "obj":
+                if cur == "}" and first:
+                    self.pos += 1
+                    stack.pop()
+                    continue
+                if not first:
+                    if cur == "}":
+                        self.pos += 1
+                        stack.pop()
+                        continue
+                    if cur != ",":
+                        raise ValueError("Expected ',' or '}' in object")
+                    self.pos += 1
+                    cur = self.peek()
+                if cur != '"':
+                    raise ValueError("Expected object key")
+                key = self.read_string()
+                if key in seen or len(seen) >= _MAX_OBJECT_KEYS:
+                    raise ValueError("Duplicate or excessive JSON key")
+                seen.add(key)
+                if self.peek() != ":":
+                    raise ValueError("Expected ':' after object key")
+                self.pos += 1
+                stack[-1][2] = False
+                val_ch = self.peek()
+            else:
+                if cur == "]" and first:
+                    self.pos += 1
+                    stack.pop()
+                    continue
+                if not first:
+                    if cur == "]":
+                        self.pos += 1
+                        stack.pop()
+                        continue
+                    if cur != ",":
+                        raise ValueError("Expected ',' or ']' in array")
+                    self.pos += 1
+                    val_ch = self.peek()
+                else:
+                    val_ch = cur
+                stack[-1][2] = False
+            if not val_ch:
+                raise ValueError("Unexpected EOF")
+            if val_ch == '"':
+                self.read_string()
+            elif val_ch in "-0123456789":
+                self.read_number(capture=False)
+            elif val_ch in "tfn":
+                self.read_literal()
+            elif val_ch in "{[":
+                if initial_depth + len(stack) + 1 > _MAX_JSON_DEPTH:
+                    raise ValueError("JSON nesting too deep")
+                self.pos += 1
+                stack.append(["obj", set(), True] if val_ch == "{" else ["arr", None, True])
+            else:
+                raise ValueError("Invalid JSON value")
+
+    def capture_value(self, initial_depth):
+        ch = self.peek()
+        if not ch:
+            raise ValueError("Unexpected EOF")
+        if ch == '"':
+            return self.read_string()
+        if ch in "-0123456789":
+            return self.read_number(capture=True)
+        if ch in "tfn":
+            return self.read_literal()
+        if ch not in "{[":
+            raise ValueError("Invalid JSON token")
+        if initial_depth + 1 > _MAX_JSON_DEPTH:
+            raise ValueError("JSON nesting too deep")
+        self.pos += 1
+        root_container = {} if ch == "{" else []
+        stack = [["obj", root_container, True] if ch == "{" else ["arr", root_container, True]]
+        items = 0
+        while stack:
+            kind, container, first = stack[-1]
+            cur = self.peek()
+            if not cur:
+                raise ValueError("Unterminated JSON container")
+            if kind == "obj":
+                if cur == "}" and first:
+                    self.pos += 1
+                    stack.pop()
+                    continue
+                if not first:
+                    if cur == "}":
+                        self.pos += 1
+                        stack.pop()
+                        continue
+                    if cur != ",":
+                        raise ValueError("Expected ',' or '}' in object")
+                    self.pos += 1
+                    cur = self.peek()
+                if cur != '"':
+                    raise ValueError("Expected object key")
+                key = self.read_string()
+                if key in container:
+                    raise ValueError("Duplicate JSON key")
+                if self.peek() != ":":
+                    raise ValueError("Expected ':' after object key")
+                self.pos += 1
+                stack[-1][2] = False
+                val_ch = self.peek()
+            else:
+                key = None
+                if cur == "]" and first:
+                    self.pos += 1
+                    stack.pop()
+                    continue
+                if not first:
+                    if cur == "]":
+                        self.pos += 1
+                        stack.pop()
+                        continue
+                    if cur != ",":
+                        raise ValueError("Expected ',' or ']' in array")
+                    self.pos += 1
+                    val_ch = self.peek()
+                else:
+                    val_ch = cur
+                stack[-1][2] = False
+            items += 1
+            if items > _MAX_CAPTURED_ITEMS:
+                raise ValueError("Captured controller entry exceeds bound")
+            if not val_ch:
+                raise ValueError("Unexpected EOF")
+            if val_ch == '"':
+                child = self.read_string()
+                if kind == "obj":
+                    container[key] = child
+                else:
+                    container.append(child)
+            elif val_ch in "-0123456789":
+                child = self.read_number(capture=True)
+                if kind == "obj":
+                    container[key] = child
+                else:
+                    container.append(child)
+            elif val_ch in "tfn":
+                child = self.read_literal()
+                if kind == "obj":
+                    container[key] = child
+                else:
+                    container.append(child)
+            elif val_ch in "{[":
+                if initial_depth + len(stack) + 1 > _MAX_JSON_DEPTH:
+                    raise ValueError("JSON nesting too deep")
+                self.pos += 1
+                child = {} if val_ch == "{" else []
+                if kind == "obj":
+                    container[key] = child
+                else:
+                    container.append(child)
+                stack.append(["obj", child, True] if val_ch == "{" else ["arr", child, True])
+            else:
+                raise ValueError("Invalid JSON value")
+        return root_container
+
+
+def _parse_controller_stream(stream, *, wanted_resources=None, wanted_leases=None,
+                             max_bytes=MAX_CONTROLLER_STATE_BYTES):
+    scanner = _StreamJsonScanner(stream, max_bytes=max_bytes)
+    if scanner.peek() != "{":
+        raise ValueError("Controller store root must be an object")
+    scanner.pos += 1
+    root_keys = set()
+    schema = None
+    saw_active = False
+    saw_leases = False
+    active_map = {}
+    captured_leases = {}
+    lease_keys = set()
+    targets = set(wanted_leases or ())
+    first_root = True
+    while True:
+        cur = scanner.peek()
+        if not cur:
+            raise ValueError("Unterminated controller store object")
+        if cur == "}" and first_root:
+            scanner.pos += 1
+            break
+        if not first_root:
+            if cur == "}":
+                scanner.pos += 1
+                break
+            if cur != ",":
+                raise ValueError("Expected ',' or '}' in controller store")
+            scanner.pos += 1
+            cur = scanner.peek()
+        if cur != '"':
+            raise ValueError("Expected top-level key in controller store")
+        top_key = scanner.read_string()
+        if top_key in root_keys:
+            raise ValueError("Duplicate JSON key")
+        root_keys.add(top_key)
+        if scanner.peek() != ":":
+            raise ValueError("Expected ':' after top-level key")
+        scanner.pos += 1
+        first_root = False
+        if top_key == "schema":
+            if scanner.peek() != '"':
+                raise ValueError("schema must be a string")
+            schema = scanner.read_string()
+        elif top_key == "active":
+            if scanner.peek() != "{":
+                raise ValueError("active must be an object")
+            scanner.pos += 1
+            saw_active = True
+            seen_active = set()
+            first_active = True
+            while True:
+                ac = scanner.peek()
+                if not ac:
+                    raise ValueError("Unterminated active object")
+                if ac == "}" and first_active:
+                    scanner.pos += 1
+                    break
+                if not first_active:
+                    if ac == "}":
+                        scanner.pos += 1
+                        break
+                    if ac != ",":
+                        raise ValueError("Expected ',' or '}' in active")
+                    scanner.pos += 1
+                    ac = scanner.peek()
+                if ac != '"':
+                    raise ValueError("Expected resource key in active")
+                res_key = scanner.read_string()
+                if res_key in seen_active or len(seen_active) >= _MAX_OBJECT_KEYS:
+                    raise ValueError("Duplicate or excessive active key")
+                seen_active.add(res_key)
+                if scanner.peek() != ":":
+                    raise ValueError("Expected ':' in active")
+                scanner.pos += 1
+                first_active = False
+                vc = scanner.peek()
+                if vc == '"':
+                    holder_val = scanner.read_string()
+                elif vc == "n":
+                    holder_val = scanner.read_literal()
+                    if holder_val is not None:
+                        raise ValueError("Invalid active value")
+                else:
+                    raise ValueError("Active resource holder must be string or null")
+                if wanted_resources is None or res_key in wanted_resources:
+                    if len(active_map) >= _MAX_CAPTURED_ITEMS:
+                        raise ValueError("Captured active map exceeds bound")
+                    active_map[res_key] = holder_val
+                    if isinstance(holder_val, str):
+                        targets.add(holder_val)
+        elif top_key == "leases":
+            if scanner.peek() != "{":
+                raise ValueError("leases must be an object")
+            scanner.pos += 1
+            saw_leases = True
+            first_lease = True
+            while True:
+                lc = scanner.peek()
+                if not lc:
+                    raise ValueError("Unterminated leases object")
+                if lc == "}" and first_lease:
+                    scanner.pos += 1
+                    break
+                if not first_lease:
+                    if lc == "}":
+                        scanner.pos += 1
+                        break
+                    if lc != ",":
+                        raise ValueError("Expected ',' or '}' in leases")
+                    scanner.pos += 1
+                    lc = scanner.peek()
+                if lc != '"':
+                    raise ValueError("Expected lease key")
+                lid = scanner.read_string()
+                if lid in lease_keys or len(lease_keys) >= _MAX_OBJECT_KEYS:
+                    raise ValueError("Duplicate or excessive lease key")
+                lease_keys.add(lid)
+                if scanner.peek() != ":":
+                    raise ValueError("Expected ':' after lease key")
+                scanner.pos += 1
+                first_lease = False
+                if lid in targets:
+                    lease_obj = scanner.capture_value(initial_depth=2)
+                    if not isinstance(lease_obj, dict):
+                        raise ValueError("Lease record must be an object")
+                    captured_leases[lid] = lease_obj
+                else:
+                    scanner.skip_value(initial_depth=2)
+        else:
+            scanner.skip_value(initial_depth=1)
+    if scanner.peek() != "":
+        raise ValueError("Trailing data in controller state")
+    if schema != CONTROLLER_STORE_SCHEMA:
+        raise ValueError("unsupported store")
+    if not saw_active:
+        raise KeyError("active")
+    if not saw_leases:
+        raise KeyError("leases")
+    return {
+        "schema": schema,
+        "active": active_map,
+        "leases": captured_leases,
+        "leaseKeys": lease_keys,
+        "stateDigest": scanner.hasher.hexdigest(),
+    }
+
+
+def read_controller_projection(store, *, resources=(), lease_ids=(),
+                               max_bytes=MAX_CONTROLLER_STATE_BYTES):
+    """Stream-validate controller state.json and extract only requested active/lease entries."""
+    wanted_resources = set(resources) if resources else None
+    wanted_leases = {lid for lid in lease_ids if isinstance(lid, str)}
+    with _open_controller_state(store) as stream:
+        first = _parse_controller_stream(
+            stream, wanted_resources=wanted_resources,
+            wanted_leases=wanted_leases, max_bytes=max_bytes)
+        missing_present = {
+            holder_id for holder_id in first["active"].values()
+            if isinstance(holder_id, str)
+            and holder_id not in first["leases"]
+            and holder_id in first["leaseKeys"]
+        }
+        if missing_present:
+            stream.seek(0)
+            second = _parse_controller_stream(
+                stream, wanted_resources=wanted_resources,
+                wanted_leases=wanted_leases | missing_present, max_bytes=max_bytes)
+            if second["stateDigest"] != first["stateDigest"]:
+                raise _ControllerStateChanged("Controller state changed during read")
+            first = second
+    first.pop("leaseKeys", None)
+    return first
 
 
 def controller_observation(store, repository, target, ticket=None):
@@ -589,17 +1215,33 @@ def controller_observation(store, repository, target, ticket=None):
         "resource": digest({"repositoryRef": repository, "targetBranch": target}),
         "state": "UNAVAILABLE", "reason": None, "holder": None, "stateDigest": None,
     }
+    custom_bytes = _controller_bytes is not _DEFAULT_CONTROLLER_BYTES
     try:
-        raw = _controller_bytes(store)
+        if custom_bytes:
+            raw = _controller_bytes(store)
+        else:
+            state = read_controller_projection(store, resources=(observation["resource"],))
     except FileNotFoundError:
         observation["reason"] = "controller-store-missing"
+    except _ControllerStateChanged:
+        observation["reason"] = "controller-state-changed"
     except (OSError, ObservationError):
         observation["reason"] = "controller-state-unreadable"
+    except (ValueError, KeyError, TypeError, AttributeError):
+        observation["reason"] = "controller-state-invalid"
     else:
         try:
-            state = json.loads(raw)
-            if not isinstance(state, dict) or state.get("schema") != CONTROLLER_STORE_SCHEMA:
-                raise ValueError("unsupported store")
+            if custom_bytes:
+                state = _parse_controller_stream(
+                    io.BytesIO(raw), wanted_resources={observation["resource"]})
+                missing_present = {
+                    hid for hid in state["active"].values()
+                    if isinstance(hid, str) and hid not in state["leases"] and hid in state["leaseKeys"]
+                }
+                if missing_present:
+                    state = _parse_controller_stream(
+                        io.BytesIO(raw), wanted_resources={observation["resource"]},
+                        wanted_leases=missing_present)
             holder_id = state["active"].get(observation["resource"])
             holder = None if holder_id is None else state["leases"][holder_id]
             if holder is not None:
@@ -609,10 +1251,16 @@ def controller_observation(store, repository, target, ticket=None):
         except (ValueError, KeyError, TypeError, AttributeError):
             observation["reason"] = "controller-state-invalid"
         else:
-            if _controller_bytes(store) != raw:
+            try:
+                changed = (_controller_bytes(store) != raw if custom_bytes
+                           else _stream_controller_digest(store) != state["stateDigest"])
+            except (OSError, ObservationError):
+                changed = True
+            if changed:
                 observation["reason"] = "controller-state-changed"
             elif holder is None or holder["phase"] in FREE_LEASE_PHASES:
                 observation["state"] = "AVAILABLE"
+                observation["stateDigest"] = state["stateDigest"]
             else:
                 # A safe reference only: no owner session, credential or plan.
                 observation["holder"] = {"leaseId": holder_id, "ticketId": holder.get("ticketId"),
@@ -623,7 +1271,7 @@ def controller_observation(store, repository, target, ticket=None):
                     observation["state"] = "HELD_BY_TICKET"
                 else:
                     observation["state"] = "HELD_BY_OTHER"
-            observation["stateDigest"] = hashlib.sha256(raw).hexdigest()
+                observation["stateDigest"] = state["stateDigest"]
     observation["nextAction"] = RESOURCE_ACTIONS[observation["state"]]
     return observation
 
@@ -815,6 +1463,9 @@ def inspect(root, workstream, requested_paths=(), ticket=None, storage=None,
         contribution = changes(root, comparison_sha, entry["headSha"])
         pending_paths = [p for p in entry["dirtyPaths"]
                          if not (Path(entry["path"]) == primary and p in bootstrap_owned)]
+        if (pending_paths and Path(entry["path"]) != primary and entry["branch"] is None
+                and entry["ticket"] is None and not entry["active"] and entry["ahead"] == 0):
+            pending_paths = outstanding_detached_paths(Path(entry["path"]), pending_paths, target_sha)
         contested = intersects(requested, pending_paths + contribution)
         reserved = entry["active"] and intersects(requested, entry["allowedPaths"])
         if contested or reserved:
@@ -890,19 +1541,105 @@ def inspect(root, workstream, requested_paths=(), ticket=None, storage=None,
         payload["publication"] = publication_observation(root, entries, target)
     if controller:
         payload["editingResource"] = controller_observation(*controller, target, ticket)
-    payload["observationDigest"] = digest({"refs": refs, "manifest": manifest, "report": payload,
-                                          "ticketStorage": mode, "ticketInputDigest": storage_digest})
     if refs != git(root, "for-each-ref", "--format=%(refname) %(objectname)", "refs/heads", "refs/remotes"):
         raise ObservationError("Refs changed during observation; retry")
     if manifest != manifest_at(root) or registrations != worktrees(root):
         raise ObservationError("Manifest or worktree registrations changed; retry")
+    disjoint_peer_updated = False
     for entry in entries:
-        if dirty_observation(Path(entry["path"]))[1] != entry["dirtyDigest"]:
-            raise ObservationError("Workspace changed during observation; retry")
+        new_dirty, new_dirty_hash, new_all_dirty = dirty_observation(Path(entry["path"]))
+        if new_dirty_hash != entry["dirtyDigest"]:
+            _reconcile_disjoint_peer_mutation(
+                entry, new_dirty, new_dirty_hash, new_all_dirty,
+                root=root, primary=primary, selected=selected, requested=requested,
+                comparison_sha=comparison_sha, statuses=statuses, mode=mode, records=records)
+            disjoint_peer_updated = True
     if database and database.exists():
         if records != {item["ticket"]: item for item in load_input(root, database=database)}:
             raise ObservationError("Ticket database changed during observation; retry")
+    if disjoint_peer_updated and observe_publication:
+        payload["publication"] = publication_observation(root, entries, target)
+        if refs != git(root, "for-each-ref", "--format=%(refname) %(objectname)", "refs/heads", "refs/remotes"):
+            raise ObservationError("Refs changed during observation; retry")
+    payload["observationDigest"] = ""
+    payload["observationDigest"] = digest({"refs": refs, "manifest": manifest, "report": payload,
+                                          "ticketStorage": mode, "ticketInputDigest": storage_digest})
     return payload
+
+
+def _reconcile_disjoint_peer_mutation(entry, new_dirty, new_dirty_hash, new_all_dirty, *,
+                                      root, primary, selected, requested, comparison_sha,
+                                      statuses, mode, records):
+    """Allow uncommitted progress only inside an unchanged, non-overlapping peer ticket checkout."""
+    peer_path = Path(entry["path"]).resolve()
+    ticket_id = entry["ticket"]
+    if (entry is selected or peer_path == root or peer_path == primary
+            or not ticket_id or not entry["branch"] or entry["intentDigest"] is None
+            or entry["status"] == "QUARANTINED_UNREADABLE"
+            or not peer_path.is_dir() or peer_path.is_symlink()
+            or quarantined(peer_path, primary)):
+        raise ObservationError("Workspace changed during observation; retry")
+    head = git(peer_path, "rev-parse", "--verify", "HEAD").strip()
+    branch = (git(peer_path, "symbolic-ref", "--quiet", "HEAD", optional=True) or "").strip()
+    if head != entry["headSha"] or branch != entry["branch"]:
+        raise ObservationError("Workspace changed during observation; retry")
+    new_pending = bool(new_all_dirty or entry["ahead"] or ticket_id in records)
+    if not new_pending or new_pending != entry["pending"]:
+        raise ObservationError("Workspace changed during observation; retry")
+    for dirty_path in (*entry["allDirtyPaths"], *new_all_dirty):
+        carrier = re.match(r"^project/(ticket-[0-9]{3,})/", dirty_path)
+        if carrier and carrier.group(1) != ticket_id:
+            raise ObservationError("Workspace changed during observation; retry")
+    ticket_dir = peer_path / "project" / ticket_id
+    if ticket_dir.is_symlink():
+        raise ObservationError("Workspace changed during observation; retry")
+    if mode == "sqlite":
+        record = records.get(ticket_id)
+        if not record:
+            raise ObservationError("Workspace changed during observation; retry")
+        re_intent = json.loads(record["files"]["intent.json"][0])
+        readme = record["files"]["README.md"][0].decode("utf-8")
+        status_match = re.search(r"(?mi)^-[ \t]+\*\*Status\*\*:[ \t]*([A-Z_]+)[ \t]*$", readme)
+        if status_match is None:
+            raise ObservationError("Workspace changed during observation; retry")
+        status_override = status_match[1]
+    else:
+        re_intent = read_json(ticket_dir / "intent.json")
+        status_override = None
+    if digest(re_intent) != entry["intentDigest"]:
+        raise ObservationError("Workspace changed during observation; retry")
+    re_res = resolve_activity(peer_path, ticket_dir, statuses, status_override=status_override)
+    if ((re_res.active, re_res.projectionStatus, re_res.authority)
+            != (entry["active"], entry["status"], entry["activityAuthority"])):
+        raise ObservationError("Workspace changed during observation; retry")
+    if (intersects(requested, entry["allowedPaths"])
+            or intersects(requested, entry["dirtyPaths"])
+            or intersects(requested, new_dirty)
+            or intersects(requested, changes(root, comparison_sha, entry["headSha"]))):
+        raise ObservationError("Workspace changed during observation; retry")
+    entry["dirtyPaths"] = new_dirty
+    entry["allDirtyPaths"] = new_all_dirty
+    entry["dirtyDigest"] = new_dirty_hash
+    entry["dirtyNewestModifiedAt"] = dirty_modified(peer_path, new_all_dirty)
+    entry["pending"] = new_pending
+
+
+def refresh_autonomy_board(root):
+    """Best effort: every work start rewrites the ignored GOV-IDLE-TAKEOVER board; it never changes the route."""
+    checker = Path(__file__).resolve().parent / "idle_takeover.py"
+    if not checker.is_file():
+        return
+    try:
+        spec = importlib.util.spec_from_file_location("work_start_idle_takeover", checker)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        board = module.observe(Path(root))
+        path = module.write_board(board)
+    except Exception:  # noqa: BLE001 - the board is advisory; observation errors must not alter the route
+        return
+    eligible = [item["ticket"] for item in board["tickets"] if item["state"] == "IDLE_TAKEOVER_ELIGIBLE"]
+    print(f"autonomy board: {path}" + (f"; idle takeover candidates: {', '.join(eligible)}" if eligible else ""),
+          file=sys.stderr)
 
 
 def main(argv=None):
@@ -968,6 +1705,7 @@ def main(argv=None):
         return 3
     if args.allocation_check and payload["route"] != "NEW_TICKET_CANDIDATE":
         payload["diagnostic"] = CODE
+    refresh_autonomy_board(args.root)
     print(json.dumps(payload, sort_keys=True, ensure_ascii=True))
     return 3 if payload["diagnostic"] else 0
 

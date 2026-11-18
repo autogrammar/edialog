@@ -15,15 +15,22 @@ from datetime import datetime, timezone
 from functools import lru_cache
 from pathlib import Path
 from typing import Any
+from urllib.parse import urlparse
 
 LEASE_SCHEMA = "wellmanifest.change-lease/v1"
 REQUEST_SCHEMA = "wellmanifest.change-lease-transition/v1"
 RECEIPT_SCHEMA = "wellmanifest.change-lease-receipt/v1"
 SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
-GIT_SHA_RE = re.compile(r"^[0-9a-f]{40,64}$")
+# JSON Schema patterns search strings; unlike $, this assertion cannot match
+# just before a final line terminator and is portable to ECMAScript engines.
+GIT_SHA_RE = re.compile(r"^(?:[0-9a-f]{40}|[0-9a-f]{64})(?![\s\S])")
 PHASES = {"claimed", "editing", "validating", "publication_frozen", "dispatching", "approved", "merged", "closed", "cancelled", "expired", "released"}
 FROZEN_PHASES = {"publication_frozen", "dispatching", "approved"}
 TERMINAL_REPLACEMENT_PHASES = {"merged", "closed", "cancelled", "released"}
+# wellmanifest/worktrees v5 layout: the single source for every lease and worktree reader.
+WORKTREES_ROOT = ".worktrees"
+LEASE_ROOT = ".subactor/leases"
+MAX_LEASE_BYTES = 65536
 TRANSITIONS = {
     "heartbeat": {phase: phase for phase in PHASES - {"released"}},
     "begin-edit": {"claimed": "editing"},
@@ -358,7 +365,7 @@ def read_writer_lease(path: Path) -> dict[str, Any]:
         if not path.is_file():
             raise ValueError("Lease must be a regular file")
         raw = path.read_bytes()
-        if len(raw) > 65536:
+        if len(raw) > MAX_LEASE_BYTES:
             raise ValueError("Lease exceeds bounded size")
         value = json.loads(raw.decode("utf-8"))
         if not isinstance(value, dict):
@@ -375,8 +382,8 @@ def read_writer_lease(path: Path) -> dict[str, Any]:
         with os.fdopen(leaf, "rb") as stream:
             if not stat.S_ISREG(os.fstat(stream.fileno()).st_mode):
                 raise ValueError("Lease must be a regular file")
-            raw = stream.read(65537)
-            if len(raw) > 65536:
+            raw = stream.read(MAX_LEASE_BYTES + 1)
+            if len(raw) > MAX_LEASE_BYTES:
                 raise ValueError("Lease exceeds bounded size")
             value = json.loads(raw)
             if not isinstance(value, dict):
@@ -384,6 +391,30 @@ def read_writer_lease(path: Path) -> dict[str, Any]:
             return value
     finally:
         os.close(descriptor)
+
+
+def canonical_owner_repository(url: str) -> str | None:
+    """Return the ``owner/name`` repository identity an origin URL carries.
+
+    Mirrors the allocator's canonical repository URI reduction so a lease can
+    bind either the canonical identity or the legacy ``local/<digest>`` label.
+    """
+    value = (url or "").strip()
+    if not value:
+        return None
+    match = re.fullmatch(r"git@([^:]+):(.+?)(?:\.git)?", value)
+    if match:
+        value = f"ssh://git@{match.group(1)}/{match.group(2)}"
+    try:
+        parsed = urlparse(value)
+    except ValueError:
+        return None
+    parts = [part for part in parsed.path.strip("/").split("/") if part]
+    if parts:
+        parts[-1] = parts[-1].removesuffix(".git")
+    if len(parts) == 2 and parsed.netloc and all(part not in {"", ".", ".."} for part in parts):
+        return "/".join(parts)
+    return None
 
 
 def check_writer(root: Path, ref: str, operation: str, actor: str, session: str,
@@ -418,7 +449,7 @@ def check_writer(root: Path, ref: str, operation: str, actor: str, session: str,
         ticket = "ticket-" + match[1]
         slug = ref.split(match[1] + "-", 1)[1]
         worktree_id = ticket + "--" + slug
-        expected = primary / ".worktrees" / worktree_id
+        expected = primary / WORKTREES_ROOT / worktree_id
         owner_worktree = Path(owners[0]["worktree"])
         if os.name == "nt":
             if owner_worktree.resolve() != expected.resolve() or expected.is_symlink():
@@ -430,13 +461,21 @@ def check_writer(root: Path, ref: str, operation: str, actor: str, session: str,
                 raise ValueError("Ticket worktree is not canonical")
             if operation == "commit" and root.resolve() != expected:
                 raise ValueError("Commit must run in the owned worktree")
-        lease = read_writer_lease(primary / ".subactor/leases" / (worktree_id + ".json"))
+        lease = read_writer_lease(primary / LEASE_ROOT / (worktree_id + ".json"))
         errors = validate_lease(lease)
         if errors:
             return errors
         repository = "local/" + hashlib.sha256(str(primary).encode("utf-8")).hexdigest()
+        accepted_repositories = {repository}
+        try:
+            canonical = canonical_owner_repository(git("config", "--get", "remote.origin.url"))
+        except subprocess.SubprocessError:
+            canonical = None
+        if canonical:
+            accepted_repositories.add(canonical)
         if (lease["branchRef"] != ref or lease["ticketId"] != ticket
-                or lease["worktreeId"] != worktree_id or lease["repositoryRef"] != repository):
+                or lease["worktreeId"] != worktree_id
+                or lease["repositoryRef"] not in accepted_repositories):
             raise ValueError("Lease repository, ticket, branch or worktree binding differs")
         if (lease["ownerActor"] != actor or lease["ownerSession"] != session
                 or lease["leaseRevision"] != int(revision) or lease["fencingToken"] != int(fencing)):
