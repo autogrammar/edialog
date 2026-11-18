@@ -49,7 +49,7 @@ files until a repository's protected CI adoption canary succeeds.
 This target repository follows `wellmanifest/new-project` policy-as-code.
 
 HOME vs ADOPT: wellmanifest owns standards; product CLI/daemons HOME in
-`subactor`, `semcod` or `paxlet-com`. "w ramach wellmanifest" means ADOPT packs such as
+`subactor`, `semcod`, `paxlet-com` or `dockuri`. "w ramach wellmanifest" means ADOPT packs such as
 `wellmanifest/{new-project,dsl,logs}`, not HOME wellmanifest. For
 SERVICE/FEATURE that create a repo, fill `intent.json` `placement`
 (`home`, `shape`, `runtimeOwner`, `adopt`) in WAIT_FOR_APPROVAL.
@@ -64,6 +64,16 @@ authorized work, read-only assistance, accepted fenced handoff or serialization.
 A new ticket needs a free scope and WIP capacity. Recheck owner, intent, current
 state and controller fencing before writing. `--force-new` is not a bypass.
 Unknown ownership or remote/independent-clone state must not be guessed.
+Run `.governance/idle_takeover.py observe` and read
+`.subactor/cache/autonomy-board.md` (owner, idle time, canonical worktree path
+and links to project, branch, README, PR and issues for every ticket). A ticket
+with no activity for `coordination.idleTakeover.idleMinutes` is
+`IDLE_TAKEOVER_ELIGIBLE`; continue it only through `idle_takeover.py takeover`
+(`GOV-IDLE-TAKEOVER`). Take the ticket, branch, `worktreePath`, `leasePath` and
+`writerEnvironment` only from that JSON result and work only inside
+`<primaryCheckout>/.worktrees/<ticket>--<slug>` (wellmanifest/worktrees v5):
+never create, move or hand-write a worktree or lease, never treat a linked
+worktree as the primary checkout, and stop on the first non-zero exit.
 
 1. Read `.governance/manifest.json`, `TODO.md`, `project/TICKETS.md` and the
    active ticket.

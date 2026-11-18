@@ -81,7 +81,9 @@
           "wellmanifest_governance.py",
           "worktree-guard.yaml",
           ".gitattributes",
-          ".github/workflows/new-project-branch-hygiene.yml"
+          ".github/workflows/new-project-branch-hygiene.yml",
+          ".githooks/pre-commit",
+          "pyproject.toml"
         ]
       },
       "infrastructure": {
@@ -270,7 +272,7 @@
   "stacks": [],
   "standard": {
     "id": "wellmanifest/new-project",
-    "version": "0.20.119"
+    "version": "0.20.162"
   },
   "ticket": {
     "activeStatuses": [

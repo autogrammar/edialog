@@ -80,7 +80,9 @@
           "$ref": "#/$defs/sha"
         },
         "branch": {
-          "const": "main"
+          "type": "string",
+          "minLength": 1,
+          "description": "Observed named primary branch; aliases require exact HEAD, local main and origin/main equality at export and verification."
         },
         "statusSha256": {
           "$ref": "#/$defs/sha256"

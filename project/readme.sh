@@ -44,15 +44,21 @@ EOF
   fi
 fi
 
-start_count="$(grep -c '^<!-- AUTO:TICKET_INDEX:START -->$' "$index_file" || true)"
-end_count="$(grep -c '^<!-- AUTO:TICKET_INDEX:END -->$' "$index_file" || true)"
-if [[ "$start_count" -eq 0 && "$end_count" -eq 0 ]]; then
+start_line="$(grep -n '^<!-- AUTO:TICKET_INDEX:START -->$' "$index_file" | cut -d: -f1 || true)"
+end_line="$(grep -n '^<!-- AUTO:TICKET_INDEX:END -->$' "$index_file" | cut -d: -f1 || true)"
+if [[ -z "$start_line" && -z "$end_line" ]]; then
   printf '\n<!-- AUTO:TICKET_INDEX:START -->\n<!-- AUTO:TICKET_INDEX:END -->\n' >> "$index_file"
-  start_count=1
-  end_count=1
+  start_line="$(grep -n '^<!-- AUTO:TICKET_INDEX:START -->$' "$index_file" | cut -d: -f1 || true)"
+  end_line="$(grep -n '^<!-- AUTO:TICKET_INDEX:END -->$' "$index_file" | cut -d: -f1 || true)"
 fi
+start_count="$(echo -n "$start_line" | grep -c . || true)"
+end_count="$(echo -n "$end_line" | grep -c . || true)"
 if [[ "$start_count" != 1 || "$end_count" != 1 ]]; then
   echo "$index_file must contain exactly one ticket-index marker pair" >&2
+  exit 2
+fi
+if [[ "$start_line" -ge "$end_line" ]]; then
+  echo "$index_file ticket-index markers must appear in order (START before END)" >&2
   exit 2
 fi
 
